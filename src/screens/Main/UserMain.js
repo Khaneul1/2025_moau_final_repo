@@ -125,7 +125,7 @@ const UserMain = ({ navigation }) => {
       groupDescription: groupDesc,
       groupCode: generatedCode,
     });
-    
+
     // 모달 닫기 및 상태 초기화
     handleCloseModal();
   };
@@ -317,14 +317,32 @@ const UserMain = ({ navigation }) => {
 
                             console.log('그룹 생성 성공:', result);
 
-                            // API 명세에 따르면 응답: { "groupId": 101, "name": "그룹명", "invite_code": "AB12CD34" }
-                            const groupIdFromResponse = result.groupId;
-                            const inviteCodeFromResponse = result.invite_code;
+                            // API 응답에서 그룹 정보 추출
+                            // response: { "groupId": 101, "name": "그룹명", "invite_code": "AB12CD34", "adminToken": "..." }
+                            const groupIdFromResponse =
+                              result.groupId || result.id;
+                            const inviteCodeFromResponse =
+                              result.invite_code || result.inviteCode;
+                            const adminToken =
+                              result.adminToken || result.admin_token;
 
-                            if (!groupIdFromResponse || !inviteCodeFromResponse) {
+                            if (
+                              !groupIdFromResponse ||
+                              !inviteCodeFromResponse
+                            ) {
                               console.error('응답 데이터 형식 오류:', result);
-                              Alert.alert('오류', '서버 응답 형식이 올바르지 않습니다.');
+                              Alert.alert(
+                                '오류',
+                                '서버 응답 형식이 올바르지 않습니다.',
+                              );
                               return;
+                            }
+
+                            // 관리자 토큰이 있으면 저장
+                            if (adminToken) {
+                              const { setAdminToken } = useAuthStore.getState();
+                              setAdminToken(adminToken);
+                              console.log('관리자 토큰 저장 완료');
                             }
 
                             setGroupId(groupIdFromResponse);
@@ -333,30 +351,42 @@ const UserMain = ({ navigation }) => {
                           } catch (error) {
                             console.error('그룹 생성 에러:', error);
                             console.error('에러 상세:', error.response);
-                            console.error('에러 상태 코드:', error.response?.status);
+                            console.error(
+                              '에러 상태 코드:',
+                              error.response?.status,
+                            );
                             console.error('에러 데이터:', error.response?.data);
                             console.error('에러 메시지:', error.message);
-                            
+
                             let errorMessage = '그룹 생성에 실패했습니다.';
-                            
+
                             if (error.response?.status === 400) {
-                              errorMessage = '잘못된 요청입니다. 입력한 정보를 확인해주세요.';
+                              errorMessage =
+                                '잘못된 요청입니다. 입력한 정보를 확인해주세요.';
                             } else if (error.response?.status === 401) {
-                              errorMessage = '인증에 실패했습니다. 로그인을 다시 시도해주세요.';
+                              errorMessage =
+                                '인증에 실패했습니다. 로그인을 다시 시도해주세요.';
                               console.error('401 에러 - 인증 토큰 확인 필요');
                               const token = useAuthStore.getState().accessToken;
-                              console.log('현재 토큰:', token ? '토큰 존재' : '토큰 없음');
+                              console.log(
+                                '현재 토큰:',
+                                token ? '토큰 존재' : '토큰 없음',
+                              );
                             } else if (error.response?.status === 403) {
-                              errorMessage = '권한이 없습니다. 로그인을 다시 시도해주세요.';
+                              errorMessage =
+                                '권한이 없습니다. 로그인을 다시 시도해주세요.';
                               console.error('403 에러 - 인증 토큰 확인 필요');
                               const token = useAuthStore.getState().accessToken;
-                              console.log('현재 토큰:', token ? '토큰 존재' : '토큰 없음');
+                              console.log(
+                                '현재 토큰:',
+                                token ? '토큰 존재' : '토큰 없음',
+                              );
                             } else if (error.response?.data?.message) {
                               errorMessage = error.response.data.message;
                             } else if (error.message) {
                               errorMessage = error.message;
                             }
-                            
+
                             Alert.alert('오류', errorMessage);
                           }
                         }}
@@ -459,39 +489,53 @@ const UserMain = ({ navigation }) => {
 
                         try {
                           // 서버로 그룹 가입 요청
-                          // API 명세: Body: { "invite_code": "A1B2C3D4" }
-                          const result = await joinGroupByCode(groupCode.trim());
-                          
-                          // API 명세에 따르면 응답: { "id": 1001, "groupId": 10, "status": "PENDING", "requestedAt": "2025-10-05T12:00:00Z" }
+                          // { "invite_code": "A1B2C3D4" }
+                          const result = await joinGroupByCode(
+                            groupCode.trim(),
+                          );
+
+                          // API 명세 response { "id": 1001, "groupId": 10, "status": "PENDING", "requestedAt": "2025-10-05T12:00:00Z" }
                           console.log('그룹 가입 성공:', result);
                           console.log('가입 요청 ID:', result.id);
                           console.log('그룹 ID:', result.groupId);
                           console.log('상태:', result.status);
-                          
+
                           // 가입 성공 시 완료 화면으로 이동
-                          setGroupCode(''); // 입력한 코드 초기화
+                          setGroupCode(''); //입력한 코드 초기화
                           setModalStep('enterDone');
                         } catch (error) {
                           console.error('그룹 가입 에러:', error);
                           console.error('에러 상세:', error.response);
-                          console.error('에러 상태 코드:', error.response?.status);
+                          console.error(
+                            '에러 상태 코드:',
+                            error.response?.status,
+                          );
                           console.error('에러 데이터:', error.response?.data);
                           console.error('에러 메시지:', error.message);
-                          
+
                           let errorMessage = '그룹 가입에 실패했습니다.';
-                          
+
                           if (error.response?.status === 400) {
-                            errorMessage = '잘못된 그룹 코드입니다. 코드를 확인해주세요.';
+                            errorMessage =
+                              '잘못된 그룹 코드입니다. 코드를 확인해주세요.';
                           } else if (error.response?.status === 401) {
-                            errorMessage = '인증에 실패했습니다. 로그인을 다시 시도해주세요.';
+                            errorMessage =
+                              '인증에 실패했습니다. 로그인을 다시 시도해주세요.';
                             console.error('401 에러 - 인증 토큰 확인 필요');
                             const token = useAuthStore.getState().accessToken;
-                            console.log('현재 토큰:', token ? '토큰 존재' : '토큰 없음');
+                            console.log(
+                              '현재 토큰:',
+                              token ? '토큰 존재' : '토큰 없음',
+                            );
                           } else if (error.response?.status === 403) {
-                            errorMessage = '권한이 없습니다. 로그인을 다시 시도해주세요.';
+                            errorMessage =
+                              '권한이 없습니다. 로그인을 다시 시도해주세요.';
                             console.error('403 에러 - 인증 토큰 확인 필요');
                             const token = useAuthStore.getState().accessToken;
-                            console.log('현재 토큰:', token ? '토큰 존재' : '토큰 없음');
+                            console.log(
+                              '현재 토큰:',
+                              token ? '토큰 존재' : '토큰 없음',
+                            );
                           } else if (error.response?.status === 409) {
                             errorMessage = '이미 가입된 그룹입니다.';
                           } else if (error.response?.data?.message) {
@@ -499,7 +543,7 @@ const UserMain = ({ navigation }) => {
                           } else if (error.message) {
                             errorMessage = error.message;
                           }
-                          
+
                           Alert.alert('오류', errorMessage);
                         }
                       }}

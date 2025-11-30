@@ -2,32 +2,31 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-/**
- * 개발용 임시 토큰 설정
- * 
- * 사용 방법:
- * 1. 로그인 없이 테스트하려면 아래에 임시 토큰을 설정하세요:
- *    const TEMP_ACCESS_TOKEN = 'your-temp-token-here';
- * 
- * 2. 카카오 로그인을 사용하려면 null로 설정하세요:
- *    const TEMP_ACCESS_TOKEN = null;
- * 
- * 3. 코드에서 동적으로 설정하려면:
- *    import { setTempToken } from '../services/authService';
- *    setTempToken('your-token-here');
- */
-const TEMP_ACCESS_TOKEN = null; // 임시 토큰을 여기에 설정하거나 null로 유지
+// 임시 토큰
+const TEMP_ACCESS_TOKEN =
+  'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NDk2NzkwMzEwIiwidHlwIjoiQVQiLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc2NDUxNzQyNiwiZXhwIjoxNzY0NTE4MzI2fQ.ZIMwPNk61ioC2xc_10dS9DwWw_iG-Ru_3mYmaMxoYwQ';
+const TEMP_REFRESH_TOKEN =
+  'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NDk2NzkwMzEwIiwidHlwIjoiUlQiLCJqdGkiOiI2OTk5OWZjNS05ZTM5LTQ5NzEtOWY1YS05MzA4ZDBlYWMwN2MiLCJpYXQiOjE3NjQ1MTc0MjcsImV4cCI6MTc2NTcyNzAyN30.PmXHQc5r5Xbo1NYwIINVgEQZ0yKSL3BmFM_FyVzCWSU';
 
 export const useAuthStore = create(
   persist(
     set => ({
-      accessToken: TEMP_ACCESS_TOKEN, // 임시 토큰 또는 null
-      refreshToken: null,
+      accessToken: TEMP_ACCESS_TOKEN, //사용자 임시 토큰
+      refreshToken: TEMP_REFRESH_TOKEN, //임시 리프레시 토큰
+      adminToken: null, //그룹 관리자 토큰 (그룹 생성 시 받음)
+
       setAccessToken: token => set({ accessToken: token }),
       setRefreshToken: token => set({ refreshToken: token }),
-      setTokens: (accessToken, refreshToken) => 
+      setAdminToken: token => set({ adminToken: token }),
+
+      setTokens: (accessToken, refreshToken) =>
         set({ accessToken, refreshToken }),
-      logout: () => set({ accessToken: null, refreshToken: null }),
+
+      setAllTokens: (accessToken, refreshToken, adminToken) =>
+        set({ accessToken, refreshToken, adminToken }),
+
+      logout: () =>
+        set({ accessToken: null, refreshToken: null, adminToken: null }),
     }),
     {
       name: 'auth-storage',

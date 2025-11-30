@@ -1,7 +1,8 @@
-import { Image, ScrollView, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native'
-import React, { useState, useRef } from 'react'
+import { Image, ScrollView, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import React, { useState, useRef, useEffect } from 'react'
 import SemiBoldText from '../../../components/customText/SemiBoldText';
 import ManagePageNavHeader from '../../../components/nav/ManagePageNavHeader';
+import { getGroup, updateGroup } from '../../../services/groupService';
 
 const GroupManage = ({route, navigation}) => {
 
@@ -31,10 +32,62 @@ const [dropdownLayoutY, setDropdownLayoutY] = useState(0);
 const [nameFocused, setNameFocused] = useState(false);
 const [descFocused, setDescFocused] = useState(false);
 
+const [loading, setLoading] = useState(false);
+const [groupData, setGroupData] = useState(null);
 
 const feeCycles = ["분기", "매월", "3개월", "6개월", "12개월"];
 
+// 회비 주기 매핑 (프론트엔드 표시 → 백엔드 형식)
+const feeCycleMap = {
+  "분기": "QUARTERLY",
+  "매월": "MONTHLY",
+  "3개월": "THREE_MONTHS",
+  "6개월": "SIX_MONTHS",
+  "12개월": "YEARLY"
+};
+
+// 회비 주기 역매핑 (백엔드 형식 → 프론트엔드 표시)
+const feeCycleReverseMap = {
+  "QUARTERLY": "분기",
+  "MONTHLY": "매월",
+  "THREE_MONTHS": "3개월",
+  "SIX_MONTHS": "6개월",
+  "YEARLY": "12개월"
+};
+
 const scrollRef = useRef(null);
+
+// 그룹 정보 조회
+useEffect(() => {
+  const fetchGroupData = async () => {
+    if (!groupId) return;
+    
+    try {
+      setLoading(true);
+      const data = await getGroup(groupId);
+      console.log('그룹 정보 조회 성공:', data);
+      
+      setGroupData(data);
+      setEditName(data.name || groupName);
+      setEditDesc(data.description || groupDescription);
+      setPayAccount(data.accountNumber || data.account_number || "");
+      setPayAmount(data.feeAmount?.toString() || data.fee_amount?.toString() || "");
+      
+      // 회비 주기가 있으면 프론트엔드 형식으로 변환
+      if (data.feeCycle || data.fee_cycle) {
+        const cycle = data.feeCycle || data.fee_cycle;
+        setSelectedCycle(feeCycleReverseMap[cycle] || "");
+      }
+    } catch (error) {
+      console.error('그룹 정보 조회 에러:', error);
+      // 에러가 발생해도 기본값 사용
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchGroupData();
+}, [groupId]);
 
 
   return (
@@ -156,9 +209,70 @@ const scrollRef = useRef(null);
                 </View>
               )}
             </View>
-            <TouchableOpacity style={styles.saveButton}
-            onPress={() => navigation.navigate("UserMain")}>
-              <SemiBoldText style={styles.buttonText}>저장하기</SemiBoldText>
+            <TouchableOpacity 
+              style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+              onPress={async () => {
+                if (loading) return;
+
+                if (!editName.trim()) {
+                  Alert.alert('알림', '그룹 이름을 입력해 주세요.');
+                  return;
+                }
+
+                try {
+                  setLoading(true);
+                  
+                  // 수정할 데이터 준비
+                  const updateData = {
+                    name: editName.trim(),
+                    description: editDesc.trim(),
+                  };
+
+                  // 계좌번호가 있으면 추가
+                  if (payAccount.trim()) {
+                    updateData.accountNumber = payAccount.trim();
+                  }
+
+                  // 회비 금액이 있으면 추가
+                  if (payAmount.trim()) {
+                    updateData.feeAmount = parseInt(payAmount.trim(), 10);
+                  }
+
+                  // 회비 주기가 선택되었으면 추가
+                  if (selectedCycle) {
+                    updateData.feeCycle = feeCycleMap[selectedCycle];
+                  }
+
+                  console.log('그룹 수정 요청:', updateData);
+                  
+                  const result = await updateGroup(groupId, updateData);
+                  console.log('그룹 수정 성공:', result);
+
+                  Alert.alert('성공', '그룹 정보가 저장되었습니다.', [
+                    {
+                      text: '확인',
+                      onPress: () => navigation.navigate("UserMain"),
+                    },
+                  ]);
+                } catch (error) {
+                  console.error('그룹 수정 에러:', error);
+                  console.error('에러 상세:', error.response?.data);
+                  
+                  const errorMessage = error.response?.data?.message 
+                    || error.message 
+                    || '그룹 정보 저장에 실패했습니다.';
+                  Alert.alert('오류', errorMessage);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <SemiBoldText style={styles.buttonText}>저장하기</SemiBoldText>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -271,6 +385,9 @@ const styles = StyleSheet.create({
     height: 61,
     borderRadius: 16,
     marginBottom: 10,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     fontSize: 26,
