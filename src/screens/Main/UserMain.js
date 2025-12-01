@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -15,7 +15,7 @@ import RegularText from '../../components/customText/RegularText';
 import SemiBoldText from '../../components/customText/SemiBoldText';
 import BoldText from '../../components/customText/BoldText';
 import CalendarView from './calendar/CalendarView';
-// import dayjs from "dayjs";
+// import RNFS from 'react-native-fs';
 
 import { createGroup, joinGroupByCode } from '../../services/groupService';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -36,7 +36,29 @@ const randomImages = [
   require('../../assets/groupImg/group13.png'),
 ];
 
+// 이미지 변환...
+// const convertImageToBase64 = async image => {
+//   try {
+//     const imagePath = Image.resolveAssetSource(image).uri;
+//     const base64Data = await RNFS.readFile(imagePath, 'base64');
+//     return `data:image/png;base64, ${base64Data}`;
+//   } catch (err) {
+//     console.error('이미지 번환 실패: ', err);
+//     return null;
+//   }
+// };
+
 const UserMain = ({ navigation }) => {
+  const { accessToken, refreshToken, setAdminToken } = useAuthStore();
+
+  // console.log('userMain access token: ', accessToken);
+  // console.log('userMain refresh token: ', refreshToken);
+  // inside UserMain component
+  useEffect(() => {
+    // 한 번만 확인
+    console.log('앱 시작시 토큰 상태:', useAuthStore.getState().accessToken);
+  }, []);
+
   const [showMonthly, setShowMonthly] = useState(false);
   const calendarRef = useRef(null);
 
@@ -145,10 +167,16 @@ const UserMain = ({ navigation }) => {
     setGroupImage(
       randomImages[Math.floor(Math.random() * randomImages.length)],
     );
+    // setGroupImage(
+    //   prev =>
+    //     prev || randomImages[Math.floor(Math.random() * randomImages.length)],
+    // );
     setGroupId(null);
     setGeneratedCode('');
     setModalStep('create');
   };
+
+  // console.log('토큰 확인:', useAuthStore.getState().accessToken);
 
   return (
     <View style={styles.container}>
@@ -309,13 +337,50 @@ const UserMain = ({ navigation }) => {
                           }
 
                           try {
-                            // 서버로 그룹 생성 요청
+                            // const base64Image = groupImage
+                            //   ? await convertImageToBase64(groupImage)
+                            //   : null;
+
                             const result = await createGroup({
                               name: groupName,
                               description: groupDesc,
+                              // image: base64Image,
                             });
 
-                            console.log('그룹 생성 성공:', result);
+                            if (!accessToken) {
+                              Alert.alert(
+                                '오류',
+                                '인증 정보가 없습니다. 다시 로그인 해 주세요',
+                              );
+                              console.log(
+                                'accessToken 없음 : createGroup 요청 불가',
+                              );
+                              return;
+                            }
+
+                            console.log('그룹 생성 요청 전 상태: ', {
+                              groupName,
+                              groupDesc,
+                              groupImage,
+                            });
+
+                            // try {
+                            //   if (!groupName) {
+                            //     setGroupImage(
+                            //       randomImages[
+                            //         Math.floor(
+                            //           Math.random() * randomImages.length,
+                            //         )
+                            //       ],
+                            //     );
+                            //   }
+                            //   const result = await createGroup({
+                            //     name: groupName,
+                            //     description: groupDesc,
+                            //     image: groupImage,
+                            //   });
+
+                            //   console.log('그룹 생성 성공:', result);
 
                             // API 응답에서 그룹 정보 추출
                             // response: { "groupId": 101, "name": "그룹명", "invite_code": "AB12CD34", "adminToken": "..." }
@@ -340,13 +405,17 @@ const UserMain = ({ navigation }) => {
 
                             // 관리자 토큰이 있으면 저장
                             if (adminToken) {
-                              const { setAdminToken } = useAuthStore.getState();
+                              // const { setAdminToken } = useAuthStore.getState();
                               setAdminToken(adminToken);
                               console.log('관리자 토큰 저장 완료');
                             }
 
                             setGroupId(groupIdFromResponse);
                             setGeneratedCode(inviteCodeFromResponse);
+
+                            console.log('모달 스텝 전환 전 상태: ', {
+                              groupId: groupIdFromResponse,
+                            });
                             setModalStep('createDone');
                           } catch (error) {
                             console.error('그룹 생성 에러:', error);
@@ -360,6 +429,10 @@ const UserMain = ({ navigation }) => {
 
                             let errorMessage = '그룹 생성에 실패했습니다.';
 
+                            // if (!error.response) {
+                            //   errorMessage =
+                            //     '서버와 연결할 수 없습니다. 네트워크 상태를 확인해 주세요.';
+                            // } else
                             if (error.response?.status === 400) {
                               errorMessage =
                                 '잘못된 요청입니다. 입력한 정보를 확인해주세요.';

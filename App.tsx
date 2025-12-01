@@ -1,4 +1,5 @@
 import * as React from 'react';
+// import { useEffect } from 'react';
 // import "./src/api/interceptors";
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -35,50 +36,183 @@ import GroupNoticeDetail from './src/screens/Group/notice/GroupNoticeDetail';
 import GroupNoticeList from './src/screens/Group/notice/GroupNoticeList';
 import AccountManage from './src/screens/Manager/accountManage/AccountManage';
 import RequestAccept from './src/screens/Group/account/RequestAccept';
+// import { useAuthStore } from './src/store/useAuthStore';
 
 const Stack = createNativeStackNavigator();
 
 const App = () => {
+  // const startTokenAutoRefresh = useAuthStore(
+  //   state => state.startTokenAutoRefresh,
+  // );
+
+  // useEffect(() => {
+  //   startTokenAutoRefresh();
+  // }, [startTokenAutoRefresh]);
+
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName='Start'>
-        <Stack.Screen name='Start' component={StartScreen} options={{headerShown: false}}/>
-        <Stack.Screen name="Login" component={KakaoLoginScreen} options={{headerShown: false}}/>
+      <Stack.Navigator initialRouteName="Start">
+        <Stack.Screen
+          name="Start"
+          component={StartScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Login"
+          component={KakaoLoginScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="CalendarView" component={CalendarView} />
-        <Stack.Screen name="MonthCalendar" component={MonthCalendarView} options={{headerShown: false}} />
-        <Stack.Screen name='NavBar' component={NavBar} options={{headerShown: false}}/>
-        <Stack.Screen name='Goto' component={Goto} options={{headerShown: false}}/>
-        <Stack.Screen name="UserMain" component={UserMain} options={{headerShown: false}}/>
-        <Stack.Screen name='GroupMain' component={GroupMain} options={{headerShown: false}}/>
-  
-        <Stack.Screen name='GroupAccountDetail' component={GroupAccountDetail} options={{headerShown: false}}/>
-        <Stack.Screen name='GroupCommunityDetail' component={GroupCommunityDetail} options={{headerShown: false}}/>
-        <Stack.Screen name="RecentTransaction" component={RecentTransaction} options={{headerShown: false}}/>
-        <Stack.Screen name="ReceiptDetail" component={ReceiptDetail} options={{headerShown: false}}/>
-        <Stack.Screen name='ReceiptList' component={ReceiptList} options={{headerShown: false}}/>
-        <Stack.Screen name='ReceiptPhoto' component={ReceiptPhoto} options={{headerShown: false}}/>
-        <Stack.Screen name='ManagerGuard' component={ManagerGuard} options={{headerShown: false}}/>
-        <Stack.Screen name="CommunityPostDetail" component={PostDetail} options={{headerShown: false}} />
-        <Stack.Screen name="CommunityPost" component={PostUpdate} options={{headerShown: false}} />
-        <Stack.Screen name='MyPostDetail' component={MyPostDetail} options={{headerShown: false}} />
-        <Stack.Screen name='ManagerMain' component={ManagerMain} options={{headerShown: false}} />
-        <Stack.Screen name='ReqReceiptDetail' component={ReqReceiptDetail} options={{headerShown: false}} />
-        <Stack.Screen name='RejectReceipt' component={RejectReceipt} options={{headerShown: false}} />
+        <Stack.Screen
+          name="MonthCalendar"
+          component={MonthCalendarView}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="NavBar"
+          component={NavBar}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Goto"
+          component={Goto}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="UserMain"
+          component={UserMain}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroupMain"
+          component={GroupMain}
+          options={{ headerShown: false }}
+        />
 
-        <Stack.Screen name='GroupManage' component={GroupManage} options={{headerShown: false}} />
-        <Stack.Screen name='MemberManage' component={MemberManage} options={{headerShown: false}} />
-        <Stack.Screen name='NoticePost' component={NoticePost} options={{headerShown: false}} />
-        <Stack.Screen name='AccountManage' component={AccountManage} options={{headerShown: false}} />
-        <Stack.Screen name='MyNoticeDetail' component={MyNoticeDetail} options={{headerShown: false}} />
-        <Stack.Screen name='RequestJoin' component={RequestJoin} options={{headerShown:false}} />
-        <Stack.Screen name='ReqReceiptList' component={ReqReceiptList} options={{headerShown: false}} />
-        <Stack.Screen name='GroupMemberList' component={GroupMemberList} options={{headerShown:false}} />
-        <Stack.Screen name='GroupNoticeDetail' component={GroupNoticeDetail} options={{headerShown: false}} />
-        <Stack.Screen name='GroupNoticeList' component={GroupNoticeList} options={{headerShown: false}} />
-        <Stack.Screen name='RequestAccept' component={RequestAccept} options={{headerShown: false}} />
+        <Stack.Screen
+          name="GroupAccountDetail"
+          component={GroupAccountDetail}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroupCommunityDetail"
+          component={GroupCommunityDetail}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RecentTransaction"
+          component={RecentTransaction}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReceiptDetail"
+          component={ReceiptDetail}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReceiptList"
+          component={ReceiptList}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReceiptPhoto"
+          component={ReceiptPhoto}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerGuard"
+          component={ManagerGuard}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CommunityPostDetail"
+          component={PostDetail}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CommunityPost"
+          component={PostUpdate}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MyPostDetail"
+          component={MyPostDetail}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerMain"
+          component={ManagerMain}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReqReceiptDetail"
+          component={ReqReceiptDetail}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RejectReceipt"
+          component={RejectReceipt}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="GroupManage"
+          component={GroupManage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MemberManage"
+          component={MemberManage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="NoticePost"
+          component={NoticePost}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AccountManage"
+          component={AccountManage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MyNoticeDetail"
+          component={MyNoticeDetail}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RequestJoin"
+          component={RequestJoin}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReqReceiptList"
+          component={ReqReceiptList}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroupMemberList"
+          component={GroupMemberList}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroupNoticeDetail"
+          component={GroupNoticeDetail}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="GroupNoticeList"
+          component={GroupNoticeList}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RequestAccept"
+          component={RequestAccept}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
 
 export default App;

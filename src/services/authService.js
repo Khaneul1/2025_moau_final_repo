@@ -1,13 +1,19 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api/axiosInstance';
 import { useAuthStore } from '../store/useAuthStore';
 
-// const REST_API_KEY = 'e2f36d079866b90e1a76d7dea20892c2';
-// const REDIRECT_URI = 'https://moau.store/login/oauth2/code/kakao';
-
 // jwt 저장
 export const saveTokens = (accessToken, refreshToken) => {
-  const { setTokens } = useAuthStore.getState();
-  setTokens(accessToken, refreshToken);
+  // const { setTokens } = useAuthStore.getState();
+  // setTokens(accessToken, refreshToken);
+
+  // useAuthStore.getState().setTokens(accessToken, refreshToken);
+
+  const store = useAuthStore.getState();
+
+  const prevRefresh = store.refreshToken;
+
+  store.setTokens(accessToken, refreshToken || prevRefresh);
 };
 
 // 토큰 재발급
@@ -25,7 +31,11 @@ export const refreshAccessToken = async () => {
 
     const { accessToken, refreshToken: newRefreshToken } = response.data;
 
-    saveTokens(accessToken, newRefreshToken);
+    if (!accessToken) {
+      throw new Error('백엔드에서 accessToken이 반환되지 않았습니다');
+    }
+
+    saveTokens(accessToken, newRefreshToken ?? null);
 
     return {
       success: true,
