@@ -4,57 +4,14 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  Modal,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { login, getProfile } from '@react-native-seoul/kakao-login';
 import BoldText from '../../components/customText/ExtraBoldText';
 import SemiBoldText from '../../components/customText/SemiBoldText';
 
-import { saveTokens } from '../../services/authService';
-
 const KakaoLoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
-
-  //   const handleKakaoLogin = async () => {
-  //     try {
-  //       setLoading(true);
-
-  //       const result = await login();
-  //       const kakaoAccessToken = result.accessToken;
-
-  //       console.log('카카오 access token: ', kakaoAccessToken);
-
-  //       const response = await fetch(
-  //         'https://moau.store/api/auth/kakao/code/exchange',
-  //         {
-  //           method: 'POST',
-  //           headers: { 'Content-Type': 'application/json' },
-  //           body: JSON.stringify({
-  //             accessToken: kakaoAccessToken,
-  //           }),
-  //         },
-  //       );
-
-  //       const jwt = await response.json();
-
-  //       if (!jwt.accessToken || !jwt.refreshToken) {
-  //         throw new Error('JWT 응답 형식이 올바르지 않습니다.');
-  //       }
-
-  //       console.log('서버 JWT:', jwt);
-
-  //       saveTokens(jwt.accessToken, jwt.refreshToken);
-
-  //       navigation.replace('UserMain');
-  //     } catch (err) {
-  //       console.error('카카오 로그인 실패:', err);
-  //       Alert.alert('오류', '카카오 로그인에 실패했습니다.');
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
 
   const handleKakaoLogin = async () => {
     setLoading(true);

@@ -9,16 +9,13 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import RegularText from '../../components/customText/RegularText';
 import SemiBoldText from '../../components/customText/SemiBoldText';
 import BoldText from '../../components/customText/BoldText';
 import CalendarView from './calendar/CalendarView';
-// import dayjs from "dayjs";
 
-import { createGroup, joinGroupByCode } from '../../services/groupService';
-import { useAuthStore } from '../../store/useAuthStore';
+import useGroupStore from '../../store/useGroupStore';
 
 const randomImages = [
   require('../../assets/groupImg/group1.png'),
@@ -41,114 +38,59 @@ const UserMain = ({ navigation }) => {
   const calendarRef = useRef(null);
 
   const [showModal, setShowModal] = useState(false);
-  const [modalStep, setModalStep] = useState('select');
+  const [modalStep, setModalStep] = useState('main');
 
   const [groupName, setGroupName] = useState('');
   const [groupDesc, setGroupDesc] = useState('');
   const [groupImage, setGroupImage] = useState(null);
-
   const [generatedCode, setGeneratedCode] = useState('');
   const [groupCode, setGroupCode] = useState('');
 
   // const createGroupId = () => {
-  //     return "G-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+  //   return 'G-' + Math.random().toString(36).substring(2, 10).toUpperCase();
   // };
+
+  const addGroup = useGroupStore(state => state.addGroup);
+  const userGroups = useGroupStore(state => state.groups);
+  const createGroupId = () => Math.floor(Math.random() * 1000000);
 
   const [groupId, setGroupId] = useState(null);
 
-  const [kakaoUser, setKakaoUser] = useState({
-    name: '고하늘',
-    email: 'kohaneul1219@naver.com',
-    groupCount: 3,
-    userGroup: [
-      {
-        id: 1,
-        name: '로망',
-        description: '창업지원단 소속 창업동아리',
-        image: require('../../assets/groupImg/group1.png'),
-      },
-      {
-        id: 2,
-        name: '구름톤 유니브',
-        description: 'Kakao x goorm 연합 동아리',
-        image: require('../../assets/groupImg/group2.png'),
-      },
-      {
-        id: 3,
-        name: '폴라리스',
-        description: '창업지원단 소속 개발 창업 동아리',
-        image: require('../../assets/groupImg/group3.png'),
-      },
-    ],
-  });
-
-  // const createdRandomCode = () => {
-  //     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  //     let result = "";
-  //     for (let i = 0; i < 6; i++) {
-  //         result += chars[Math.floor(Math.random() * chars.length)];
-  //     }
-  //     return result;
-  // };
-
-  const resetModalState = () => {
-    setGroupName('');
-    setGroupDesc('');
-    setGroupImage(null);
-    setGeneratedCode('');
-    setGroupCode('');
-    setGroupId(null);
-    setModalStep('main');
-  };
-
-  // create 단계에서 모달을 닫을 때: 모달만 닫기 (입력한 내용은 유지)
-  const handleCloseModalFromCreate = () => {
-    setShowModal(false);
-    // 상태는 유지하여 나중에 다시 모달을 열었을 때 입력한 내용이 남아있도록 함
-  };
-
-  // createDone 단계나 다른 완료 단계에서 모달을 닫을 때: 상태 초기화하고 모달 닫기
-  const handleCloseModal = () => {
-    resetModalState();
-    setShowModal(false);
+  const createdRandomCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
   };
 
   const handleCreateFinish = () => {
-    if (!groupId || !generatedCode) {
-      Alert.alert('오류', '그룹 정보가 올바르지 않습니다.');
-      return;
-    }
-
-    navigation.navigate('GroupManage', {
-      groupId,
-      groupName,
-      groupDescription: groupDesc,
-      groupCode: generatedCode,
-    });
-
-    // 모달 닫기 및 상태 초기화
-    handleCloseModal();
+    const newGroup = {
+      groupId: groupId,
+      groupName: groupName,
+      description: groupDesc,
+      image: groupImage,
+      ownerUserId: 101,
+      inviteCode: generatedCode,
+      createdAt: new Date().toISOString(),
+      duesPeriod: 'NONE',
+      duesAmount: 0,
+    };
+    addGroup(newGroup);
+    setShowModal(false);
+    navigation.navigate('GroupMain', { groupId: groupId });
   };
 
-  // const handleEnterCode = () => {
-  //     navigation.navigate("AdminJoin", {
-  //         userName: kakaoUser.name,
-  //         requestDate: dayjs().format("YYYY-MM-DD")
-  //     });
-  //     setShowModal(false);
-  // };
-
   const startCreateGroup = () => {
-    // 그룹 생성 시작 시 상태 초기화 (이전 입력 내용 제거)
-    setGroupName('');
-    setGroupDesc('');
     setGroupImage(
       randomImages[Math.floor(Math.random() * randomImages.length)],
     );
-    setGroupId(null);
-    setGeneratedCode('');
     setModalStep('create');
   };
+
+  // 예시 사용자 이름
+  const userName = '고하늘';
 
   return (
     <View style={styles.container}>
@@ -162,7 +104,7 @@ const UserMain = ({ navigation }) => {
               />
             </TouchableOpacity>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <BoldText style={styles.userName}>{kakaoUser.name} 님</BoldText>
+              <BoldText style={styles.userName}>{userName} 님</BoldText>
             </View>
           </View>
         </View>
@@ -184,7 +126,7 @@ const UserMain = ({ navigation }) => {
 
           <View style={styles.myGroupSection}>
             <SemiBoldText style={styles.userGroupText}>
-              내 그룹 {kakaoUser.groupCount}
+              내 그룹 {userGroups.length}
             </SemiBoldText>
             <TouchableOpacity
               style={styles.addGroupButton}
@@ -201,7 +143,7 @@ const UserMain = ({ navigation }) => {
           </View>
 
           <View style={styles.groupList}>
-            {kakaoUser.userGroup.map(group => (
+            {userGroups.map(group => (
               <View key={group.id} style={styles.groupCard}>
                 <Image source={group.image} style={styles.imgIcon} />
                 <View style={{ flex: 1 }}>
@@ -246,7 +188,7 @@ const UserMain = ({ navigation }) => {
                       </BoldText>
                       <TouchableOpacity
                         style={styles.disabledButton}
-                        onPress={handleCloseModal}
+                        onPress={() => setShowModal(false)}
                       >
                         <Image
                           source={require('../../assets/img/disabledIcon.png')}
@@ -290,7 +232,7 @@ const UserMain = ({ navigation }) => {
                 {modalStep === 'create' && (
                   <>
                     <View style={styles.topRow}>
-                      <TouchableOpacity onPress={handleCloseModalFromCreate}>
+                      <TouchableOpacity onPress={() => setShowModal(false)}>
                         <Image
                           source={require('../../assets/img/disabledIcon.png')}
                           style={styles.disabledIcon}
@@ -300,95 +242,11 @@ const UserMain = ({ navigation }) => {
                       <BoldText style={styles.modalTitle}>
                         그룹 생성하기
                       </BoldText>
-
                       <TouchableOpacity
-                        onPress={async () => {
-                          if (!groupName.trim()) {
-                            Alert.alert('알림', '그룹 이름을 입력해 주세요.');
-                            return;
-                          }
-
-                          try {
-                            // 서버로 그룹 생성 요청
-                            const result = await createGroup({
-                              name: groupName,
-                              description: groupDesc,
-                            });
-
-                            console.log('그룹 생성 성공:', result);
-
-                            // API 응답에서 그룹 정보 추출
-                            // response: { "groupId": 101, "name": "그룹명", "invite_code": "AB12CD34", "adminToken": "..." }
-                            const groupIdFromResponse =
-                              result.groupId || result.id;
-                            const inviteCodeFromResponse =
-                              result.invite_code || result.inviteCode;
-                            const adminToken =
-                              result.adminToken || result.admin_token;
-
-                            if (
-                              !groupIdFromResponse ||
-                              !inviteCodeFromResponse
-                            ) {
-                              console.error('응답 데이터 형식 오류:', result);
-                              Alert.alert(
-                                '오류',
-                                '서버 응답 형식이 올바르지 않습니다.',
-                              );
-                              return;
-                            }
-
-                            // 관리자 토큰이 있으면 저장
-                            if (adminToken) {
-                              const { setAdminToken } = useAuthStore.getState();
-                              setAdminToken(adminToken);
-                              console.log('관리자 토큰 저장 완료');
-                            }
-
-                            setGroupId(groupIdFromResponse);
-                            setGeneratedCode(inviteCodeFromResponse);
-                            setModalStep('createDone');
-                          } catch (error) {
-                            console.error('그룹 생성 에러:', error);
-                            console.error('에러 상세:', error.response);
-                            console.error(
-                              '에러 상태 코드:',
-                              error.response?.status,
-                            );
-                            console.error('에러 데이터:', error.response?.data);
-                            console.error('에러 메시지:', error.message);
-
-                            let errorMessage = '그룹 생성에 실패했습니다.';
-
-                            if (error.response?.status === 400) {
-                              errorMessage =
-                                '잘못된 요청입니다. 입력한 정보를 확인해주세요.';
-                            } else if (error.response?.status === 401) {
-                              errorMessage =
-                                '인증에 실패했습니다. 로그인을 다시 시도해주세요.';
-                              console.error('401 에러 - 인증 토큰 확인 필요');
-                              const token = useAuthStore.getState().accessToken;
-                              console.log(
-                                '현재 토큰:',
-                                token ? '토큰 존재' : '토큰 없음',
-                              );
-                            } else if (error.response?.status === 403) {
-                              errorMessage =
-                                '권한이 없습니다. 로그인을 다시 시도해주세요.';
-                              console.error('403 에러 - 인증 토큰 확인 필요');
-                              const token = useAuthStore.getState().accessToken;
-                              console.log(
-                                '현재 토큰:',
-                                token ? '토큰 존재' : '토큰 없음',
-                              );
-                            } else if (error.response?.data?.message) {
-                              errorMessage = error.response.data.message;
-                            } else if (error.message) {
-                              errorMessage = error.message;
-                            }
-
-                            Alert.alert('오류', errorMessage);
-                          }
+                        onPress={() => {
+                          setGeneratedCode(createdRandomCode());
+                          setGroupId(createGroupId());
+                          setModalStep('createDone');
                         }}
                       >
                         <BoldText style={styles.confirmText}>확인</BoldText>
@@ -418,7 +276,7 @@ const UserMain = ({ navigation }) => {
                 {modalStep === 'createDone' && (
                   <>
                     <View style={styles.topRow}>
-                      <TouchableOpacity onPress={handleCloseModal}>
+                      <TouchableOpacity onPress={() => setShowModal(false)}>
                         <Image
                           source={require('../../assets/img/disabledIcon.png')}
                           style={styles.disabledIcon}
@@ -457,7 +315,7 @@ const UserMain = ({ navigation }) => {
                 {modalStep === 'enterCode' && (
                   <>
                     <View style={styles.topRow}>
-                      <TouchableOpacity onPress={handleCloseModalFromCreate}>
+                      <TouchableOpacity onPress={() => setShowModal(false)}>
                         <Image
                           source={require('../../assets/img/disabledIcon.png')}
                           style={styles.disabledIcon}
@@ -468,7 +326,9 @@ const UserMain = ({ navigation }) => {
                         그룹 추가하기
                       </BoldText>
 
-                      <View style={{ width: 50 }} />
+                      <TouchableOpacity onPress={handleCreateFinish}>
+                        <BoldText style={styles.confirmText}>확인</BoldText>
+                      </TouchableOpacity>
                     </View>
 
                     <TextInput
@@ -481,72 +341,7 @@ const UserMain = ({ navigation }) => {
 
                     <TouchableOpacity
                       style={styles.enterBtn}
-                      onPress={async () => {
-                        if (!groupCode.trim()) {
-                          Alert.alert('알림', '그룹 코드를 입력해 주세요.');
-                          return;
-                        }
-
-                        try {
-                          // 서버로 그룹 가입 요청
-                          // { "invite_code": "A1B2C3D4" }
-                          const result = await joinGroupByCode(
-                            groupCode.trim(),
-                          );
-
-                          // API 명세 response { "id": 1001, "groupId": 10, "status": "PENDING", "requestedAt": "2025-10-05T12:00:00Z" }
-                          console.log('그룹 가입 성공:', result);
-                          console.log('가입 요청 ID:', result.id);
-                          console.log('그룹 ID:', result.groupId);
-                          console.log('상태:', result.status);
-
-                          // 가입 성공 시 완료 화면으로 이동
-                          setGroupCode(''); //입력한 코드 초기화
-                          setModalStep('enterDone');
-                        } catch (error) {
-                          console.error('그룹 가입 에러:', error);
-                          console.error('에러 상세:', error.response);
-                          console.error(
-                            '에러 상태 코드:',
-                            error.response?.status,
-                          );
-                          console.error('에러 데이터:', error.response?.data);
-                          console.error('에러 메시지:', error.message);
-
-                          let errorMessage = '그룹 가입에 실패했습니다.';
-
-                          if (error.response?.status === 400) {
-                            errorMessage =
-                              '잘못된 그룹 코드입니다. 코드를 확인해주세요.';
-                          } else if (error.response?.status === 401) {
-                            errorMessage =
-                              '인증에 실패했습니다. 로그인을 다시 시도해주세요.';
-                            console.error('401 에러 - 인증 토큰 확인 필요');
-                            const token = useAuthStore.getState().accessToken;
-                            console.log(
-                              '현재 토큰:',
-                              token ? '토큰 존재' : '토큰 없음',
-                            );
-                          } else if (error.response?.status === 403) {
-                            errorMessage =
-                              '권한이 없습니다. 로그인을 다시 시도해주세요.';
-                            console.error('403 에러 - 인증 토큰 확인 필요');
-                            const token = useAuthStore.getState().accessToken;
-                            console.log(
-                              '현재 토큰:',
-                              token ? '토큰 존재' : '토큰 없음',
-                            );
-                          } else if (error.response?.status === 409) {
-                            errorMessage = '이미 가입된 그룹입니다.';
-                          } else if (error.response?.data?.message) {
-                            errorMessage = error.response.data.message;
-                          } else if (error.message) {
-                            errorMessage = error.message;
-                          }
-
-                          Alert.alert('오류', errorMessage);
-                        }
-                      }}
+                      onPress={() => setModalStep('enterDone')}
                     >
                       <SemiBoldText style={styles.enterBtnText}>
                         입장하기
@@ -563,7 +358,7 @@ const UserMain = ({ navigation }) => {
                       </BoldText>
                       <TouchableOpacity
                         style={styles.disabledButton}
-                        onPress={handleCloseModal}
+                        onPress={() => setShowModal(false)}
                       >
                         <Image
                           source={require('../../assets/img/disabledIcon.png')}
