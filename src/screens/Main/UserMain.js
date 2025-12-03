@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -15,10 +15,11 @@ import RegularText from '../../components/customText/RegularText';
 import SemiBoldText from '../../components/customText/SemiBoldText';
 import BoldText from '../../components/customText/BoldText';
 import CalendarView from './calendar/CalendarView';
-// import RNFS from 'react-native-fs';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { createGroup, joinGroupByCode } from '../../services/groupService';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useGroupStore } from '../../store/useGroupStore';
 
 const randomImages = [
   require('../../assets/groupImg/group1.png'),
@@ -36,26 +37,12 @@ const randomImages = [
   require('../../assets/groupImg/group13.png'),
 ];
 
-// 이미지 변환...
-// const convertImageToBase64 = async image => {
-//   try {
-//     const imagePath = Image.resolveAssetSource(image).uri;
-//     const base64Data = await RNFS.readFile(imagePath, 'base64');
-//     return `data:image/png;base64, ${base64Data}`;
-//   } catch (err) {
-//     console.error('이미지 번환 실패: ', err);
-//     return null;
-//   }
-// };
-
 const UserMain = ({ navigation }) => {
   const { accessToken, refreshToken, setAdminToken } = useAuthStore();
+  const { groupList, fetchGroups } = useGroupStore();
+  const { nickname } = useAuthStore();
 
-  // console.log('userMain access token: ', accessToken);
-  // console.log('userMain refresh token: ', refreshToken);
-  // inside UserMain component
   useEffect(() => {
-    // 한 번만 확인
     console.log('앱 시작시 토큰 상태:', useAuthStore.getState().accessToken);
   }, []);
 
@@ -72,46 +59,13 @@ const UserMain = ({ navigation }) => {
   const [generatedCode, setGeneratedCode] = useState('');
   const [groupCode, setGroupCode] = useState('');
 
-  // const createGroupId = () => {
-  //     return "G-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-  // };
+  const [teamId, setTeamId] = useState(null);
 
-  const [groupId, setGroupId] = useState(null);
-
-  const [kakaoUser, setKakaoUser] = useState({
-    name: '고하늘',
-    email: 'kohaneul1219@naver.com',
-    groupCount: 3,
-    userGroup: [
-      {
-        id: 1,
-        name: '로망',
-        description: '창업지원단 소속 창업동아리',
-        image: require('../../assets/groupImg/group1.png'),
-      },
-      {
-        id: 2,
-        name: '구름톤 유니브',
-        description: 'Kakao x goorm 연합 동아리',
-        image: require('../../assets/groupImg/group2.png'),
-      },
-      {
-        id: 3,
-        name: '폴라리스',
-        description: '창업지원단 소속 개발 창업 동아리',
-        image: require('../../assets/groupImg/group3.png'),
-      },
-    ],
-  });
-
-  // const createdRandomCode = () => {
-  //     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  //     let result = "";
-  //     for (let i = 0; i < 6; i++) {
-  //         result += chars[Math.floor(Math.random() * chars.length)];
-  //     }
-  //     return result;
-  // };
+  useFocusEffect(
+    useCallback(() => {
+      fetchGroups();
+    }, [fetchGroups]),
+  );
 
   const resetModalState = () => {
     setGroupName('');
@@ -119,7 +73,7 @@ const UserMain = ({ navigation }) => {
     setGroupImage(null);
     setGeneratedCode('');
     setGroupCode('');
-    setGroupId(null);
+    setTeamId(null);
     setModalStep('main');
   };
 
@@ -136,14 +90,15 @@ const UserMain = ({ navigation }) => {
   };
 
   const handleCreateFinish = () => {
-    if (!groupId || !generatedCode) {
+    if (!teamId || !generatedCode) {
       Alert.alert('오류', '그룹 정보가 올바르지 않습니다.');
       return;
     }
 
     navigation.navigate('GroupManage', {
-      groupId,
+      teamId,
       groupName,
+      groupImage,
       groupDescription: groupDesc,
       groupCode: generatedCode,
     });
@@ -167,16 +122,10 @@ const UserMain = ({ navigation }) => {
     setGroupImage(
       randomImages[Math.floor(Math.random() * randomImages.length)],
     );
-    // setGroupImage(
-    //   prev =>
-    //     prev || randomImages[Math.floor(Math.random() * randomImages.length)],
-    // );
-    setGroupId(null);
+    setTeamId(null);
     setGeneratedCode('');
     setModalStep('create');
   };
-
-  // console.log('토큰 확인:', useAuthStore.getState().accessToken);
 
   return (
     <View style={styles.container}>
@@ -190,7 +139,7 @@ const UserMain = ({ navigation }) => {
               />
             </TouchableOpacity>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <BoldText style={styles.userName}>{kakaoUser.name} 님</BoldText>
+              <BoldText style={styles.userName}>{nickname} 님</BoldText>
             </View>
           </View>
         </View>
@@ -212,7 +161,7 @@ const UserMain = ({ navigation }) => {
 
           <View style={styles.myGroupSection}>
             <SemiBoldText style={styles.userGroupText}>
-              내 그룹 {kakaoUser.groupCount}
+              내 그룹 {groupList.length}
             </SemiBoldText>
             <TouchableOpacity
               style={styles.addGroupButton}
@@ -229,28 +178,33 @@ const UserMain = ({ navigation }) => {
           </View>
 
           <View style={styles.groupList}>
-            {kakaoUser.userGroup.map(group => (
-              <View key={group.id} style={styles.groupCard}>
-                <Image source={group.image} style={styles.imgIcon} />
-                <View style={{ flex: 1 }}>
-                  <SemiBoldText style={styles.groupName}>
-                    {group.name}
-                  </SemiBoldText>
-                  <RegularText style={styles.groupInfo}>
-                    {group.description}
-                  </RegularText>
-                </View>
+            {groupList.map(group => {
+              const groupImageIndex = group.id % randomImages.length;
+              const assignedImage = randomImages[groupImageIndex];
 
-                <TouchableOpacity
-                  style={styles.joinButton}
-                  onPress={() =>
-                    navigation.navigate('GroupMain', { groupId: group.id })
-                  }
-                >
-                  <SemiBoldText style={styles.joinText}>참여</SemiBoldText>
-                </TouchableOpacity>
-              </View>
-            ))}
+              return (
+                <View key={group.id} style={styles.groupCard}>
+                  <Image source={assignedImage} style={styles.imgIcon} />
+                  <View style={{ flex: 1 }}>
+                    <SemiBoldText style={styles.groupName}>
+                      {group.name}
+                    </SemiBoldText>
+                    <RegularText style={styles.groupInfo}>
+                      {group.description}
+                    </RegularText>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.joinButton}
+                    onPress={() =>
+                      navigation.navigate('GroupMain', { teamId: group.teamId })
+                    }
+                  >
+                    <SemiBoldText style={styles.joinText}>참여</SemiBoldText>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </View>
         </View>
       </ScrollView>
@@ -337,14 +291,10 @@ const UserMain = ({ navigation }) => {
                           }
 
                           try {
-                            // const base64Image = groupImage
-                            //   ? await convertImageToBase64(groupImage)
-                            //   : null;
-
                             const result = await createGroup({
                               name: groupName,
                               description: groupDesc,
-                              // image: base64Image,
+                              groupImage: groupImage,
                             });
 
                             if (!accessToken) {
@@ -383,16 +333,16 @@ const UserMain = ({ navigation }) => {
                             //   console.log('그룹 생성 성공:', result);
 
                             // API 응답에서 그룹 정보 추출
-                            // response: { "groupId": 101, "name": "그룹명", "invite_code": "AB12CD34", "adminToken": "..." }
-                            const groupIdFromResponse =
-                              result.groupId || result.id;
+                            // response: { "teamId": 101, "name": "그룹명", "invite_code": "AB12CD34", "adminToken": "..." }
+                            const teamIdFromResponse =
+                              result.teamId || result.id;
                             const inviteCodeFromResponse =
                               result.invite_code || result.inviteCode;
                             const adminToken =
                               result.adminToken || result.admin_token;
 
                             if (
-                              !groupIdFromResponse ||
+                              !teamIdFromResponse ||
                               !inviteCodeFromResponse
                             ) {
                               console.error('응답 데이터 형식 오류:', result);
@@ -410,11 +360,11 @@ const UserMain = ({ navigation }) => {
                               console.log('관리자 토큰 저장 완료');
                             }
 
-                            setGroupId(groupIdFromResponse);
+                            setTeamId(teamIdFromResponse);
                             setGeneratedCode(inviteCodeFromResponse);
 
                             console.log('모달 스텝 전환 전 상태: ', {
-                              groupId: groupIdFromResponse,
+                              teamId: teamIdFromResponse,
                             });
                             setModalStep('createDone');
                           } catch (error) {
@@ -567,10 +517,10 @@ const UserMain = ({ navigation }) => {
                             groupCode.trim(),
                           );
 
-                          // API 명세 response { "id": 1001, "groupId": 10, "status": "PENDING", "requestedAt": "2025-10-05T12:00:00Z" }
+                          // API 명세 response { "id": 1001, "teamId": 10, "status": "PENDING", "requestedAt": "2025-10-05T12:00:00Z" }
                           console.log('그룹 가입 성공:', result);
                           console.log('가입 요청 ID:', result.id);
-                          console.log('그룹 ID:', result.groupId);
+                          console.log('그룹 ID:', result.teamId);
                           console.log('상태:', result.status);
 
                           // 가입 성공 시 완료 화면으로 이동

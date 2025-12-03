@@ -6,12 +6,11 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { login, getProfile } from '@react-native-seoul/kakao-login';
 import BoldText from '../../components/customText/ExtraBoldText';
 import SemiBoldText from '../../components/customText/SemiBoldText';
 
-import { saveTokens } from '../../services/authService';
 import { useAuthStore } from '../../store/useAuthStore';
 
 const KakaoLoginScreen = ({ navigation }) => {
@@ -19,7 +18,7 @@ const KakaoLoginScreen = ({ navigation }) => {
 
   const kakaoLogin = useAuthStore(state => state.kakaoLogin);
   const startTokenAutoRefresh = useAuthStore(
-    state => state.stateTokenAutoRefresh,
+    state => state.startTokenAutoRefresh,
   );
 
   const handleKakaoLogin = async () => {
@@ -64,7 +63,11 @@ const KakaoLoginScreen = ({ navigation }) => {
           {loading ? (
             <ActivityIndicator color="#000000" />
           ) : (
-            <SemiBoldText style={styles.loginText}>카카오 로그인</SemiBoldText>
+            <Image
+              source={require('../../assets/kakao/kakao_login_large_wide.png')}
+              style={styles.kakaoLoginImage}
+              resizeMode="contain"
+            />
           )}
         </TouchableOpacity>
       </LinearGradient>
@@ -90,23 +93,24 @@ const styles = StyleSheet.create({
     fontSize: 64,
     letterSpacing: 12,
     color: '#FFFFFF',
-    marginLeft: 4,
+    marginLeft: 10,
   },
   subTitle: {
     fontSize: 22,
     color: '#FFFFFF',
+    marginLeft: 4,
   },
   loginButton: {
-    backgroundColor: '#F9E000',
-    width: 290,
+    width: '85%',
     height: 59,
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 50,
+    overflow: 'hidden',
   },
-  loginText: {
-    fontSize: 26,
+  kakaoLoginImage: {
+    width: '100%',
+    height: '100%',
   },
   loginButtonDisabled: {
     opacity: 0.6,

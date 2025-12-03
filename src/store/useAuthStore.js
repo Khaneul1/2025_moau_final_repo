@@ -9,76 +9,79 @@ import {
   refreshAccessToken,
 } from '../services/authService';
 
-// 임시 토큰
-// const TEMP_ACCESS_TOKEN =
-//   'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NDk2NzkwMzEwIiwidHlwIjoiQVQiLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc2NDUxNzQyNiwiZXhwIjoxNzY0NTE4MzI2fQ.ZIMwPNk61ioC2xc_10dS9DwWw_iG-Ru_3mYmaMxoYwQ';
-// const TEMP_REFRESH_TOKEN =
-//   'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NDk2NzkwMzEwIiwidHlwIjoiUlQiLCJqdGkiOiI2OTk5OWZjNS05ZTM5LTQ5NzEtOWY1YS05MzA4ZDBlYWMwN2MiLCJpYXQiOjE3NjQ1MTc0MjcsImV4cCI6MTc2NTcyNzAyN30.PmXHQc5r5Xbo1NYwIINVgEQZ0yKSL3BmFM_FyVzCWSU';
-
 export const useAuthStore = create(
-  // persist(
-  (set, get) => ({
-    accessToken: null,
-    refreshToken: null,
-    adminToken: null,
+  persist(
+    (set, get) => ({
+      accessToken: null,
+      refreshToken: null,
+      adminToken: null,
 
-    loading: false,
-    _refreshInterval: null,
+      nickname: null,
+      userId: null,
 
-    setTokens: (accessToken, refreshToken) =>
-      set({ accessToken, refreshToken }),
-    setAdminToken: adminToken => set({ adminToken }),
-    logout: () => {
-      clearInterval(get()._refreshInterval);
-      set({
-        accessToken: null,
-        refreshToken: null,
-        adminToken: null,
-        _refreshInterval: null,
-      });
-    },
+      loading: false,
+      _refreshInterval: null,
 
-    // 카카오 로그인
-    kakaoLogin: async () => {
-      set({ loading: true });
-      try {
-        const result = await login();
-        const kakaoAccessToken = result.accessToken;
+      setTokens: (accessToken, refreshToken) =>
+        set({ accessToken, refreshToken }),
 
-        const jwt = await exchangeKakaoToken(kakaoAccessToken);
+      setUserInfo: (nickname, userId) => set({ nickname, userId }),
 
-        await saveTokens(jwt.accessToken, jwt.refreshToken);
+      // setAdminToken: adminToken => set({ adminToken }),
+      logout: () => {
+        clearInterval(get()._refreshInterval);
+        set({
+          accessToken: null,
+          refreshToken: null,
+          adminToken: null,
+          nickname: null,
+          userId: null,
+          _refreshInterval: null,
+        });
+      },
 
-        return true;
-      } catch (err) {
-        console.error('카카오 로그인 실패: ', err);
-        return false;
-      } finally {
-        set({ loading: false });
-      }
-    },
+      // 카카오 로그인
+      kakaoLogin: async () => {
+        set({ loading: true });
+        try {
+          const result = await login();
+          const kakaoAccessToken = result.accessToken;
 
-    startTokenAutoRefresh: () => {
-      if (get()._refreshInterval) return;
+          const jwt = await exchangeKakaoToken(kakaoAccessToken);
 
-      const interval = setInterval(async () => {
-        const { success, accessToken, refreshToken } =
-          await refreshAccessToken();
+          set({ nickname: jwt.nickname, userId: jwt.userId });
 
-        if (!success) {
-          console.warn('자동 refresh 실패 : 로그아웃');
-          get().logout();
-        } else {
-          console.log('자동 refresh 성공: ', accessToken);
-          await saveTokens(accessToken, refreshToken);
+          await saveTokens(jwt.accessToken, jwt.refreshToken);
+
+          return true;
+        } catch (err) {
+          console.error('카카오 로그인 실패: ', err);
+          return false;
+        } finally {
+          set({ loading: false });
         }
-      }, 4 * 60 * 1000);
-      set({ _refreshInterval: interval });
+      },
+
+      startTokenAutoRefresh: () => {
+        if (get()._refreshInterval) return;
+
+        const interval = setInterval(async () => {
+          // const { success, accessToken, refreshToken } =
+          //   await refreshAccessToken();
+
+          const response = await refreshAccessToken();
+          if (!response.success) {
+            get().logout();
+            return;
+          }
+          await saveTokens(response.accessToken, response.refreshToken);
+        }, 4 * 60 * 1000);
+        set({ _refreshInterval: interval });
+      },
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => AsyncStorage),
     },
-  }),
-  {
-    name: 'auth-storage',
-    storage: createJSONStorage(() => AsyncStorage),
-  },
-  // ),
+  ),
 );

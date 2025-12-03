@@ -13,35 +13,25 @@ export const saveTokens = async (accessToken, refreshToken) => {
   } catch (err) {
     console.error('토큰 저장 실패', err);
   }
-
-  // const store = useAuthStore.getState();
-
-  // const prevRefresh = store.refreshToken;
-
-  // store.setTokens(accessToken, refreshToken || prevRefresh);
 };
 
 export const exchangeKakaoToken = async kakaoAccessToken => {
   try {
-    const response = await fetch(
-      'https://moau.store/api/auth/kakao/code/exchange',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'applicatoin/json' },
-        body: JSON.stringify({ accessToken: kakaoAccessToken }),
-      },
-    );
+    const response = await api.post('/auth/kakao/code/exchange', {
+      accessToken: kakaoAccessToken,
+    });
 
-    const jwt = await response.json();
+    const data = response.data;
 
-    if (!jwt.accessToken || !jwt.refreshToken) {
+    if (!data.accessToken || !data.refreshToken) {
       throw new Error('JWT 응답 형식이 올바르지 않습니다');
     }
-    console.log('서버 jwt :', jwt);
-    // saveTokens(jwt.accessToken, jwt.refreshToken);
-    return jwt;
+
+    console.log('서버 data :', data);
+
+    return data;
   } catch (err) {
-    console.err('카카오 토큰 교환 실패 :', err);
+    console.error('카카오 토큰 교환 실패 :', err);
     throw err;
   }
 };
@@ -49,21 +39,18 @@ export const exchangeKakaoToken = async kakaoAccessToken => {
 // 토큰 재발급
 export const refreshAccessToken = async () => {
   try {
-    const { refreshToken } = useAuthStore.getState();
-
-    if (!refreshToken) {
-      throw new Error('Refresh token이 없습니다.');
-    }
+    const { refreshToken } = useAuthStore.getState().refreshToken;
+    if (!refreshToken) throw new Error('refreshToken 없음');
 
     const response = await api.post('/auth/refresh', {
       refreshToken,
     });
 
-    const { accessToken, refreshToken: newRefreshToken } = response.data;
+    const data = response.data;
 
-    if (!accessToken) {
-      throw new Error('백엔드에서 accessToken이 반환되지 않았습니다');
-    }
+    const { accessToken, refreshToken: newRefreshToken } = data;
+
+    if (!accessToken) throw new Error('accessToken 없음');
 
     await saveTokens(accessToken, newRefreshToken);
 

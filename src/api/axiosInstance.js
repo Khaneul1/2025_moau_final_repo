@@ -13,16 +13,14 @@ let failedQueue = [];
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
+    if (error) prom.reject(error);
+    else prom.resolve(token);
   });
 
   failedQueue = [];
 };
 
+// 요청
 api.interceptors.request.use(
   config => {
     const token = useAuthStore.getState().accessToken;
@@ -62,7 +60,6 @@ const refreshTokensRequest = async refreshToken => {
 api.interceptors.response.use(
   response => response,
   async error => {
-    // console.error('Axios 요청 실패: ', error.config?.url, error.message);
     const originalRequest = error.config;
     const status = error.response?.status;
 
@@ -86,29 +83,22 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const currentRefreshToken = useAuthStore.getState().refreshToken;
-        if (!currentRefreshToken) throw new Error('Refresh token이 없습니다.');
+        const { refreshToken } = useAuthStore.getState();
+        const { accessToken, refreshToken: newRefresh } =
+          await refreshTokensRequest(refreshToken);
 
-        // const data = await refreshTokensRequest(currentRefreshToken);
-        const { accessToken, refreshToken: newRefreshToken } =
-          await refreshTokensRequest(currentRefreshToken);
+        // const data = await refreshTokensRequest(refreshToken);
+        // const { accessToken, refreshToken: newRefresh } = data;
 
-        if (!accessToken)
-          throw new Error('백엔드에서 accessToken이 반환되지 않았습니다');
-
-        await saveTokens(accessToken, newRefreshToken);
+        await saveTokens(accessToken, newRefresh);
 
         processQueue(null, accessToken);
-
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-
-        console.error('리프레시 토큰 만료. 로그아웃 처리합니다.', refreshError);
+      } catch (err) {
+        processQueue(err, null);
         useAuthStore.getState().logout();
-
-        return Promise.reject(refreshError);
+        return Promise.reject(err);
       } finally {
         isRefreshing = false;
       }
@@ -116,14 +106,11 @@ api.interceptors.response.use(
 
     // 403 에러 처리
     if (error.response?.status === 403) {
-      console.error('403 Forbidden 에러 발생');
-      console.error('요청 URL:', error.config?.url);
-      console.error('요청 헤더:', error.config?.headers);
-      console.error('응답 데이터:', error.response?.data);
+      console.error('403 권한 없음');
 
-      // 토큰 확인
-      const token = useAuthStore.getState().accessToken;
-      console.error('현재 저장된 토큰: ', token || '없음');
+      // // 토큰 확인
+      // const token = useAuthStore.getState().accessToken;
+      // console.error('현재 저장된 토큰: ', token || '없음');
     }
 
     return Promise.reject(error);
