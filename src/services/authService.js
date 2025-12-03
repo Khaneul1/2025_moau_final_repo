@@ -64,3 +64,13 @@ export const refreshAccessToken = async () => {
     return { success: false };
   }
 };
+
+export const getMyProfile = async () => {
+  try {
+    const response = await api.get('/users/me');
+    return response.data;
+  } catch (err) {
+    console.error('내 정보 조회 실패: ', err);
+    throw err;
+  }
+};

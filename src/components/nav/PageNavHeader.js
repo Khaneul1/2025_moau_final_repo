@@ -1,9 +1,9 @@
 // components/NavHeader.js
-import React from "react";
-import { View, TouchableOpacity, Image, StyleSheet } from "react-native";
-import BoldText from "../customText/BoldText";
+import React from 'react';
+import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import BoldText from '../customText/BoldText';
 
-const PageNavHeader = ({ pageName, navigation, groupId }) => {
+const PageNavHeader = ({ pageName, navigation, teamId }) => {
   return (
     <View style={styles.navContainer}>
       <TouchableOpacity
@@ -11,7 +11,7 @@ const PageNavHeader = ({ pageName, navigation, groupId }) => {
         onPress={() => navigation.goBack()}
       >
         <Image
-          source={require("../../assets/img/backPurpleIcon.png")}
+          source={require('../../assets/img/backPurpleIcon.png')}
           style={styles.backIconStyle}
         />
       </TouchableOpacity>
@@ -19,16 +19,18 @@ const PageNavHeader = ({ pageName, navigation, groupId }) => {
       <BoldText style={styles.pageName}>{pageName}</BoldText>
 
       <View style={styles.iconGroup}>
-        <TouchableOpacity onPress={() => navigation.navigate("ManagerGuard", {groupId})}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ManagerGuard', { teamId })}
+        >
           <Image
-            source={require("../../assets/img/ManagerPurpleIcon.png")}
+            source={require('../../assets/img/ManagerPurpleIcon.png')}
             style={styles.mngIconStyle}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate("Goto")}>
+        <TouchableOpacity onPress={() => navigation.navigate('Goto')}>
           <Image
-            source={require("../../assets/img/GotoPurpleIcon.png")}
+            source={require('../../assets/img/GotoPurpleIcon.png')}
             style={styles.gotoIconStyle}
           />
         </TouchableOpacity>
@@ -41,20 +43,20 @@ export default PageNavHeader;
 
 const styles = StyleSheet.create({
   navContainer: {
-    justifyContent: "flex-end",
-    alignItems: "center",
-    flexDirection: "row",
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    flexDirection: 'row',
     padding: 16,
     marginTop: 65,
   },
   backButton: {
     width: 50,
     height: 50,
-    justifyContent: "flex-start",
-    position: "absolute",
+    justifyContent: 'flex-start',
+    position: 'absolute',
     left: 16,
     top: 9,
-    alignItems: "center",
+    alignItems: 'center',
     zIndex: 10,
   },
   backIconStyle: {
@@ -62,9 +64,9 @@ const styles = StyleSheet.create({
     height: 37,
   },
   iconGroup: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   gotoIconStyle: {
     width: 23,
@@ -79,10 +81,10 @@ const styles = StyleSheet.create({
   },
   pageName: {
     fontSize: 27,
-    color: "#7242E2",
-    position: "absolute",
+    color: '#7242E2',
+    position: 'absolute',
     left: 0,
     right: 0,
-    textAlign: "center",
+    textAlign: 'center',
   },
 });

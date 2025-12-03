@@ -76,3 +76,14 @@ export const deleteGroup = async teamId => {
     throw error;
   }
 };
+
+// 그룹원 목록 조회
+export const getGroupMembers = async teamId => {
+  try {
+    const response = await api.get(`/teams/${teamId}/members`);
+    return response.data;
+  } catch (error) {
+    console.error('그룹 멤버 조회 에러:', error);
+    throw error;
+  }
+};

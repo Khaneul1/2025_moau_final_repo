@@ -1,7 +1,6 @@
 import React from 'react';
-import { groupDetails } from '../../data/group';
 import { Image, View, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import BoldText from '../customText/BoldText';
 
 const NavBar = ({ title, teamId }) => {
