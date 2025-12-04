@@ -23,24 +23,20 @@ import {
 } from '../../../services/communityService';
 
 const buildCommentTree = flatComments => {
-  if (!Array.isArray(flatComments)) return [];
-
   const map = {};
   const roots = [];
 
-  flatComments.forEach(c => {
-    map[c.commentId] = { ...c, replies: [] };
+  flatComments.forEach(comment => {
+    map[comment.id] = { ...comment, replies: [] };
   });
 
-  flatComments.forEach(c => {
-    map[c.commentId] = { ...c, replies: [] };
-  });
-
-  flatComments.forEach(c => {
-    if (c.parentId === null) {
-      roots.push(map[c.commentId]);
-    } else if (map[c.parentId]) {
-      map[c.parentId].replies.push(map[c.commentId]);
+  flatComments.forEach(comment => {
+    if (comment.parentId) {
+      if (map[comment.parentId]) {
+        map[comment.parentId].replies.push(map[comment.id]);
+      }
+    } else {
+      roots.push(map[comment.id]);
     }
   });
 
@@ -49,17 +45,14 @@ const buildCommentTree = flatComments => {
 
 const useAnonymousMapping = comments => {
   return useMemo(() => {
-    if (!Array.isArray(comments)) return {};
-
     let counter = 1;
-    const mapping = {};
+    const mapping = {}; //userId -> 익명 번호
+
     const flat = []; //댓글+답글 전체를 시간순으로 정렬된 리스트로 변환
 
     comments.forEach(c => {
       flat.push({ ...c, isReply: false });
-
-      const replies = Array.isArray(c.replies) ? c.replies : [];
-      replies.forEach(r => {
+      c.replies?.forEach(r => {
         flat.push({ ...r, isReply: true });
       });
     });
@@ -70,7 +63,7 @@ const useAnonymousMapping = comments => {
     //익명 사용자 userId: 익명 번호 매핑
     flat.forEach(item => {
       if (item.isAnonymous) {
-        const key = item.authorName || item.commentId;
+        const key = item.authorName;
 
         if (!mapping[key]) {
           mapping[key] = `익명${counter}`;
@@ -87,136 +80,121 @@ const PostDetail = ({ route, navigation }) => {
   const { teamId, postId } = route.params;
 
   const { postDetail, fetchPostDetail } = useCommunityStore();
-  //   const [comments, setComments] = useState(post.comments || []);
+
+  const [comments, setComments] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [replyTarget, setReplyTarget] = useState(null);
+  const [replyTargetId, setReplyTargetId] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(true);
 
-  const [isEditingPost, setIsEditingPost] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
 
-  //   const comments = postDetail?.comments || [];
-  const flatComments = postDetail?.comments || [];
-  const anonymousNameMap = useAnonymousMapping(comments);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    fetchPostDetail(teamId, postId);
+    const load = async () => {
+      await fetchPostDetail(teamId, postId);
+    };
+    load();
   }, [teamId, postId]);
+
+  useEffect(() => {
+    if (postDetail?.comments) {
+      const commentTree = buildCommentTree(postDetail.comments || []);
+      setComments(commentTree);
+    }
+
+    if (postDetail) {
+      setEditTitle(postDetail.title);
+      setEditContent(postDetail.content);
+    }
+  }, [postDetail]);
+
+  const anonymousNameMap = useAnonymousMapping(comments);
+
+  const getTotalCommentCount = post => {
+    return comments.reduce((acc, c) => acc + 1 + c.replies.length, 0);
+  };
 
   if (!postDetail) {
     return (
-      <SemiBoldText style={{ textAlign: 'center', marginTop: 50 }}>
-        게시글을 불러오는 중입니다...
+      <SemiBoldText style={{ fontSize: 12, color: '#ADADAD' }}>
+        게시글을 찾을 수 없습니다.
       </SemiBoldText>
     );
   }
 
-  const startEditMode = () => {
-    setEditTitle(postDetail.title);
-    setEditContent(postDetail.content);
-    setIsEditingPost(true);
+  const addComment = async () => {
+    if (inputText.trim() === '') return;
+
+    try {
+      const createdId = await createComment(teamId, postId, {
+        content: inputText,
+        isAnonymous: isAnonymous,
+        parentId: null,
+      });
+
+      console.log('댓글 작성 완료, ID:', createdId);
+      setInputText('');
+      await fetchPostDetail(teamId, postId);
+    } catch (err) {
+      console.error('댓글 작성 실패:', err);
+    }
   };
 
-  const cancelEdit = () => {
-    setIsEditingPost(false);
+  const addReply = async parentId => {
+    if (inputText.trim() === '') return;
+
+    try {
+      const createdId = await createComment(teamId, postId, {
+        content: inputText,
+        isAnonymous: isAnonymous,
+        parentId: parentId,
+      });
+
+      console.log('대댓글 작성 완료, ID:', createdId);
+
+      setInputText('');
+      setReplyTargetId(null);
+      await fetchPostDetail(teamId, postId);
+    } catch (err) {
+      console.error('대댓글 작성 실패:', err);
+    }
   };
 
-  const submitEdit = async () => {
+  const handleDeletePost = async () => {
+    Alert.alert('게시글 삭제', '정말로 이 게시글을 삭제하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deletePost(teamId, postId);
+            console.log('게시글 삭제 완료');
+            navigation.goBack();
+          } catch (err) {
+            console.error('게시글 삭제 실패:', err);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEditPost = async () => {
     try {
       await updatePost(teamId, postId, {
         title: editTitle,
         content: editContent,
+        isAnonymous: postDetail.isAnonymous,
       });
-
+      console.log('게시글 수정 완료');
+      setIsEditing(false);
       await fetchPostDetail(teamId, postId);
-      setIsEditingPost(false);
     } catch (err) {
-      console.error('게시글 수정 실패: ', err.response?.data);
-      Alert.alert('오류', '게시글 수정에 실패했습니다.');
+      console.error('게시글 수정 실패:', err);
     }
   };
-
-  const handleSubmitComment = async () => {
-    if (!inputText.trim()) return;
-
-    const body = {
-      content: inputText.trim(),
-      isAnonymous,
-      parentId: replyTarget ? replyTarget : null,
-    };
-
-    try {
-      await createComment(teamId, postId, body);
-      await fetchPostDetail(teamId, postId);
-      setInputText('');
-      setReplyTarget(null);
-    } catch (err) {
-      Alert.alert('오류', '댓글 작성에 실패했습니다');
-    }
-  };
-
-  const sortedComments = [...comments].sort(
-    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-  );
-
-  //   const addComment = () => {
-  //     if (!inputText.trim()) return;
-
-  //     const newComment = {
-  //       id: comments.length + 1,
-  //       userId: `user-${Date.now()}`,
-  //       content: inputText,
-  //       createdAt: new Date().toISOString(),
-  //       isAnonymous: isAnonymous,
-  //       authorName: '',
-  //       replies: [],
-  //     };
-
-  //     setComments([...comments, newComment]);
-  //     setInputText('');
-  //   };
-
-  //   const addReply = commentId => {
-  //     if (!inputText.trim()) return;
-
-  //     const updated = comments.map(c => {
-  //       if (c.id === commentId) {
-  //         return {
-  //           ...c,
-  //           replies: [
-  //             ...c.replies,
-  //             {
-  //               id: Date.now(),
-  //               userId: `reply-${Date.now()}`,
-  //               content: inputText,
-  //               createdAt: new Date().toISOString(),
-  //               isAnonymous: isAnonymous,
-  //               authorName: '',
-  //             },
-  //           ],
-  //         };
-  //       }
-
-  //       return c;
-  //     });
-
-  //     setComments(updated);
-  //     setInputText('');
-  //     setReplyTargetId(null);
-  //   };
-
-  //   const getTotalCommentCount = post => {
-  //     return comments.reduce((acc, c) => acc + 1 + c.replies.length, 0);
-  //   };
-
-  //   if (!post) {
-  //     return (
-  //       <SemiBoldText style={{ fontSize: 12, color: '#ADADAD' }}>
-  //         게시글을 찾을 수 없습니다.
-  //       </SemiBoldText>
-  //     );
-  //   }
 
   return (
     <KeyboardAvoidingView
@@ -231,132 +209,167 @@ const PostDetail = ({ route, navigation }) => {
             teamId={teamId}
           />
 
-          <View style={styles.postCard}>
-            <View style={styles.authorCard}>
-              <BoldText style={styles.author}>{postDetail.authorName}</BoldText>
-              <SemiBoldText style={styles.dateText}>
-                {dayjs(postDetail.createdAt).format('YYYY-MM-DD HH:mm')}
-              </SemiBoldText>
-              <View style={styles.buttonGroup}>
-                {/* 본인 글일 경우 수정/삭제 버튼 표시!! */}
-                {postDetail.isMyPost && !isEditingPost && (
-                  <View style={styles.myPostCard}>
-                    <TouchableOpacity
-                      style={styles.actionBtn}
-                      onPress={startEditMode}
-                    >
-                      <SemiBoldText style={styles.btnText}>수정</SemiBoldText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionBtn}
-                      onPress={async () => {
-                        Alert.alert('삭제', '정말 삭제할까요?', [
-                          { text: '취소', style: 'cancel' },
-                          {
-                            text: '삭제',
-                            onPress: async () => {
-                              await deletePost(teamId, postId);
-                              navigation.goBack();
-                            },
-                          },
-                        ]);
-                      }}
-                    >
-                      <SemiBoldText style={styles.btnText}>삭제</SemiBoldText>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            </View>
-            {isEditingPost ? (
-              <>
-                <TextInput
-                  value={editTitle}
-                  onChangeText={setEditTitle}
-                  style={[styles.postTitle, { color: '#B5B2B2' }]}
-                />
-                <TextInput
-                  value={editContent}
-                  onChangeText={setEditContent}
-                  style={[styles.postContent, { color: '#4A3A90' }]}
-                  multiline
-                />
-                <View style={{ flexDirection: 'row', marginTop: 12, gap: 10 }}>
-                  <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={submitEdit}
-                  >
-                    <SemiBoldText style={styles.btnText}>완료</SemiBoldText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={cancelEdit}
-                  >
-                    <SemiBoldText style={styles.btnText}>취소</SemiBoldText>
-                  </TouchableOpacity>
-                </View>
-              </>
-            ) : (
-              <>
-                <BoldText style={styles.postTitle}>{postDetail.title}</BoldText>
-                <View style={styles.divider} />
-                <SemiBoldText style={styles.postContent}>
-                  {postDetail.content}
+          <View style={styles.authorRow}>
+            <View style={styles.postCard}>
+              <View style={styles.authorCard}>
+                <BoldText style={styles.author}>
+                  {postDetail.authorName}
+                </BoldText>
+                <SemiBoldText style={styles.dateText}>
+                  {dayjs(postDetail.createdAt).format('YYYY-MM-DD HH:mm')}
                 </SemiBoldText>
-              </>
+              </View>
+
+              {postDetail.isMyPost && (
+                <View style={styles.editButtonGroup}>
+                  {!isEditing ? (
+                    <>
+                      <TouchableOpacity
+                        style={styles.smallButton}
+                        onPress={() => setIsEditing(true)}
+                      >
+                        <SemiBoldText style={styles.smallButtonText}>
+                          수정
+                        </SemiBoldText>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.smallButton}
+                        onPress={handleDeletePost}
+                      >
+                        <SemiBoldText style={styles.smallButtonText}>
+                          삭제
+                        </SemiBoldText>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.smallButton, { borderColor: '#7242E2' }]}
+                        onPress={handleEditPost}
+                      >
+                        <SemiBoldText
+                          style={[styles.smallButtonText, { color: '#7242E2' }]}
+                        >
+                          저장
+                        </SemiBoldText>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.smallButton}
+                        onPress={() => {
+                          setIsEditing(false);
+                          setEditTitle(postDetail.title);
+                          setEditContent(postDetail.content);
+                        }}
+                      >
+                        <SemiBoldText style={styles.smallButtonText}>
+                          취소
+                        </SemiBoldText>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* <BoldText style={styles.postTitle}>{postDetail.title}</BoldText> */}
+            {isEditing ? (
+              <TextInput
+                value={editTitle}
+                onChangeText={setEditTitle}
+                style={{
+                  fontSize: 19,
+                  color: '#7242E2',
+                  marginTop: 16,
+                  fontFamily: 'Freesentation-7Bold',
+                }}
+              />
+            ) : (
+              <BoldText style={styles.postTitle}>{postDetail.title}</BoldText>
+            )}
+            <View style={styles.divider} />
+            {isEditing ? (
+              <TextInput
+                value={editContent}
+                onChangeText={setEditContent}
+                multiline
+                style={styles.editContentInput}
+              />
+            ) : (
+              <SemiBoldText style={styles.postContent}>
+                {postDetail.content}
+              </SemiBoldText>
             )}
           </View>
-
           <View style={styles.commentCount}>
             <Image
               source={require('../../../assets/img/commentCountIcon.png')}
               style={styles.commentIcon}
             />
             <SemiBoldText style={styles.commentCountText}>
-              {sortedComments.length}
+              {getTotalCommentCount()}
             </SemiBoldText>
           </View>
 
           <View style={styles.commentCard}>
-            {sortedComments.map(c => (
-              <View
-                key={c.commentId}
-                style={[
-                  styles.commentBox,
-                  c.parentId ? styles.replyBoxIndent : null,
-                ]}
-              >
-                <SemiBoldText style={styles.commentAuthor}>
-                  {c.isAnonymous
-                    ? anonymousNameMap[c.authorName] || '익명'
-                    : c.authorName}
-                </SemiBoldText>
+            {comments.map(comment => {
+              const displayName = comment.isAnonymous
+                ? anonymousNameMap[comment.authorName]
+                : comment.authorName;
 
-                <SemiBoldText style={styles.commentContent}>
-                  {c.content}
-                </SemiBoldText>
+              return (
+                <View key={comment.id} style={styles.commentBox}>
+                  <SemiBoldText style={styles.commentAuthor}>
+                    {displayName}
+                  </SemiBoldText>
+                  <SemiBoldText style={styles.commentContent}>
+                    {comment.content}
+                  </SemiBoldText>
+                  <SemiBoldText style={styles.commentDateText}>
+                    {dayjs(comment.createdAt).format('YYYY-MM-DD HH:mm')}
+                  </SemiBoldText>
 
-                <SemiBoldText style={styles.commentDateText}>
-                  {dayjs(c.createdAt).format('YYYY-MM-DD HH:mm')}
-                </SemiBoldText>
-                <TouchableOpacity
-                  style={styles.replyButton}
-                  onPress={() => setReplyTarget(c.commentId)}
-                >
-                  <SemiBoldText style={styles.buttonText}>답글</SemiBoldText>
-                </TouchableOpacity>
-              </View>
-            ))}
+                  <TouchableOpacity
+                    style={styles.replyButton}
+                    onPress={() => setReplyTargetId(comment.id)}
+                  >
+                    <SemiBoldText style={styles.buttonText}>답글</SemiBoldText>
+                  </TouchableOpacity>
+
+                  {comment.replies?.map(reply => {
+                    const replyName = reply.isAnonymous
+                      ? anonymousNameMap[reply.authorName]
+                      : reply.authorName;
+
+                    return (
+                      <View key={reply.id} style={styles.replyBox}>
+                        <SemiBoldText style={styles.commentAuthor}>
+                          {replyName}
+                        </SemiBoldText>
+                        <SemiBoldText style={styles.commentContent}>
+                          {reply.content}
+                        </SemiBoldText>
+                        <SemiBoldText style={styles.replyDateText}>
+                          {dayjs(reply.createdAt).format('YYYY-MM-DD HH:mm')}
+                        </SemiBoldText>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
           </View>
         </ScrollView>
-
         <CommentInput
           inputText={inputText}
           setInputText={setInputText}
           isAnonymous={isAnonymous}
           setIsAnonymous={setIsAnonymous}
-          isReply={replyTarget !== null}
-          onSubmit={handleSubmitComment}
+          isReply={replyTargetId !== null}
+          onSubmit={() => {
+            replyTargetId ? addReply(replyTargetId) : addComment();
+          }}
         />
       </View>
     </KeyboardAvoidingView>
@@ -371,7 +384,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 8,
   },
-  postCard: {
+  authorRow: {
     backgroundColor: '#FFFFFF',
     alignItems: 'flex-start',
     justifyContent: 'center',
@@ -386,6 +399,28 @@ const styles = StyleSheet.create({
     width: '90%',
     marginTop: 40,
     alignSelf: 'center',
+  },
+  editButtonGroup: {
+    flexDirection: 'row',
+    gap: 5,
+    marginLeft: 70,
+  },
+  smallButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ADADAD',
+  },
+  smallButtonText: {
+    fontSize: 13,
+    color: '#ADADAD',
+  },
+  postCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   authorCard: {
     flexDirection: 'row',
@@ -404,7 +439,6 @@ const styles = StyleSheet.create({
     color: '#7242E2',
     fontSize: 19,
     marginTop: 16,
-    fontFamily: 'Freesentation-6SemiBold', //수정 시 인풋창 폰트 불일치 문제로 추가
   },
   divider: {
     borderWidth: 0.5,
@@ -415,7 +449,15 @@ const styles = StyleSheet.create({
   },
   postContent: {
     color: '#3E247C',
-    fontSize: 14,
+    fontSize: 16,
+    fontFamily: 'Freesentation-6SemiBold',
+  },
+  editContentInput: {
+    minHeight: 100,
+    width: '100%',
+    textAlignVertical: 'top',
+    fontSize: 16,
+    color: '#ADADAD',
     fontFamily: 'Freesentation-6SemiBold',
   },
   commentCount: {
@@ -526,28 +568,11 @@ const styles = StyleSheet.create({
   inputBox: {
     width: '65%',
     fontSize: 14.6,
-    fontWeight: '700',
     color: '#ADADAD',
   },
   sendIcon: {
     width: 22,
     height: 22,
     marginRight: 8,
-  },
-  buttonGroup: {},
-  myPostCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginLeft: 45,
-  },
-  actionBtn: {
-    borderWidth: 1,
-    borderColor: '#ADADAD',
-    paddingHorizontal: 8,
-    borderRadius: 20,
-  },
-  btnText: {
-    color: '#ADADAD',
   },
 });

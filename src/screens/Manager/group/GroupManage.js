@@ -316,7 +316,7 @@ const GroupManage = ({ route, navigation }) => {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => {
                 Alert.alert(
@@ -357,7 +357,7 @@ const GroupManage = ({ route, navigation }) => {
               <SemiBoldText style={styles.deleteButtonText}>
                 그룹 삭제
               </SemiBoldText>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </ScrollView>
       </View>

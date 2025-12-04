@@ -17,7 +17,23 @@ export const getPostList = async (teamId, page = 0, size = 10) => {
 export const getPostDetail = async (teamId, postId) => {
   try {
     const res = await api.get(`/teams/${teamId}/posts/${postId}`);
-    return res.data.data;
+    const detail = res.data.data;
+
+    const convertedComments = detail.comments.map(c => ({
+      id: c.commentId,
+      parentId: c.parentId,
+      content: c.content,
+      authorName: c.authorName,
+      // isAnonymous: c.authorName.includes('익명'),
+      isAnonymous: c.isAnonymous,
+      isMyComment: c.isMyComment,
+      createdAt: c.createdAt,
+    }));
+
+    return {
+      ...detail,
+      comments: convertedComments,
+    };
   } catch (err) {
     console.error('게시글 상세 조회 실패: ', err);
     throw err;
