@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   editButtonGroup: {
     flexDirection: 'row',
     gap: 5,
-    marginLeft: 70,
+    marginLeft: 60,
   },
   smallButton: {
     backgroundColor: '#FFFFFF',
