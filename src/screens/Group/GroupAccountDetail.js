@@ -16,15 +16,44 @@ import { launchCamera } from 'react-native-image-picker';
 import useReceiptStore from '../../store/useReceiptStore';
 
 const GroupAccountDetail = ({ navigation, route }) => {
-  const { teamId } = route.params;
-  const { receipts, loading, fetchReceipts } = useReceiptStore();
-  const [showAll, setShowAll] = useState(false);
+  const { teamId, image } = route.params;
+  const { accounts, fetchAccounts, transaction, fetchTransactions, loading } =
+    useReceiptStore();
+
+  // const [groupImage, setGroupImage] = useState(null);
 
   useEffect(() => {
-    fetchReceipts(teamId);
+    fetchAccounts(teamId);
+    fetchTransactions(teamId);
   }, [teamId]);
 
-  const visibleReceipts = showAll ? receipts : receipts.slice(0, 3);
+  const currentGroupData = accounts?.[0];
+
+  if (!currentGroupData) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <SemiBoldText>회계 정보를 불러오는 중입니다...</SemiBoldText>
+      </View>
+    );
+  }
+
+  // useEffect(() => {
+  //   if (currentGroupData) {
+  //     setGroupImage(currentGroupData.imageUrl);
+  //   }
+  // }, [currentGroupData]);
+
+  // if (!currentGroupData) return null;
+
+  // const visibleReceipts = transaction.slice(0, 3);
+
+  // const [showAll, setShowAll] = useState(false);
+
+  // useEffect(() => {
+  //   fetchReceipts(teamId);
+  // }, [teamId]);
+
+  // const visibleReceipts = showAll ? receipts : receipts.slice(0, 3);
 
   //   const [accountData, setAccountData] = useState({
   //     1: {
@@ -269,7 +298,7 @@ const GroupAccountDetail = ({ navigation, route }) => {
         <ScrollView>
           <NavBar />
           <View style={styles.groupAccountContainer}>
-            <Image source={group.image} style={styles.groupImage} />
+            <Image source={image} style={styles.groupImage} />
             <BoldText style={styles.accountNumText}>
               {currentGroupData.accountNum}
             </BoldText>

@@ -39,7 +39,7 @@ const randomImages = [
 
 const UserMain = ({ navigation }) => {
   const { accessToken, refreshToken, setAdminToken } = useAuthStore();
-  const { groupList, fetchGroups } = useGroupStore();
+  const { groupList, fetchGroups, groupImages } = useGroupStore();
   const { nickname } = useAuthStore();
 
   useEffect(() => {
@@ -179,8 +179,9 @@ const UserMain = ({ navigation }) => {
 
           <View style={styles.groupList}>
             {groupList.map(group => {
-              const groupImageIndex = group.id % randomImages.length;
-              const assignedImage = randomImages[groupImageIndex];
+              const assignedImage =
+                groupImages?.[group.id] ??
+                randomImages[group.id % randomImages.length];
 
               return (
                 <View key={group.id} style={styles.groupCard}>
@@ -203,6 +204,7 @@ const UserMain = ({ navigation }) => {
                       })
                     }
                   >
+                    {/* <Image source={assignedImage} style={styles.groupImage} /> */}
                     <SemiBoldText style={styles.joinText}>참여</SemiBoldText>
                   </TouchableOpacity>
                 </View>

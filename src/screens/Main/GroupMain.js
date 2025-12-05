@@ -160,6 +160,7 @@ const GroupMain = ({ route, navigation }) => {
                     onPress={() =>
                       navigation.navigate('GroupAccountDetail', {
                         teamId: group.id,
+                        image: group.image,
                       })
                     }
                   >

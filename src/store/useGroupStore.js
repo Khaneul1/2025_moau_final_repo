@@ -4,6 +4,7 @@ import { getUserGroups } from '../services/groupService';
 export const useGroupStore = create(set => ({
   groupList: [],
   loading: false,
+  groupImages: {},
 
   // 전체 그룹 목록 다시 불러오기
   fetchGroups: async () => {
@@ -27,5 +28,13 @@ export const useGroupStore = create(set => ({
       groupList: state.groupList.map(g =>
         g.id === updatedGroup.id ? updatedGroup : g,
       ),
+    })),
+
+  addGroupImage: (teamId, image) =>
+    set(state => ({
+      groupImages: {
+        ...state.groupImages,
+        [teamId]: image,
+      },
     })),
 }));
