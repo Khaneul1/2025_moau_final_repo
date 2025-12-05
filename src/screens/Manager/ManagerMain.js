@@ -5,44 +5,19 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import LinearGradient from 'react-native-linear-gradient';
-// import {groupReceiptData} from '../../data/receipts';
+import { groupReceiptData } from '../../data/receipts';
 import SemiBoldText from '../../components/customText/SemiBoldText';
 import BoldText from '../../components/customText/BoldText';
 
-import { getGroup, joinGroupByCode } from '../../services/groupService';
-
 const ManagerMain = ({ navigation, route }) => {
-  const teamId = route?.params?.teamId;
-  //   const groupData = groupReceiptData[groupId] || [];
-  //   const receiptList = groupData.receipts;
-  //   const groupName = groupData.groupName;
-  //   const groupImage = groupData.groupImage;
-  //   const requestCount = receiptList.length;
-
-  const [groupInfo, setGroupInfo] = useState(null);
-  const [joinRequests, setJoinRequests] = useState([]);
-  //   const [pendingReceipts, setPendingReceipts] = useState([]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const group = await getGroup(teamId);
-        setGroupInfo(group);
-
-        const reqs = await joinGroupByCode(teamId);
-        setJoinRequests(reqs);
-
-        // const receipts = await getPendingReceipts(teamId);
-        // setPendingReceipts(receipts);
-      } catch (err) {
-        console.error('MangerMain 로딩 에러: ', err);
-      }
-    })();
-  }, []);
-
-  if (!groupInfo) return null;
+  const groupId = route?.params?.groupId || 1;
+  const groupData = groupReceiptData[groupId] || [];
+  const receiptList = groupData.receipts;
+  const groupName = groupData.groupName;
+  const groupImage = groupData.groupImage;
+  const requestCount = receiptList.length;
 
   return (
     <LinearGradient
@@ -63,17 +38,17 @@ const ManagerMain = ({ navigation, route }) => {
                 style={styles.backIconStyle}
               />
             </TouchableOpacity>
-            <BoldText style={styles.groupName}>{groupInfo.name}</BoldText>
+            <BoldText style={styles.groupName}>{groupName}</BoldText>
           </View>
 
           <View style={styles.groupInfoCard}>
-            <Image source={groupInfo.image} style={styles.groupImg} />
+            <Image source={groupImage} style={styles.groupImg} />
             <TouchableOpacity
               style={styles.acceptConfirmButton}
-              onPress={() => navigation.navigate('RequestJoin', { teamId })}
+              onPress={() => navigation.navigate('RequestJoin')}
             >
               <SemiBoldText style={styles.groupRequestText}>
-                그룹 승인 요청 {joinRequests.length}
+                그룹 승인 요청 6
               </SemiBoldText>
             </TouchableOpacity>
           </View>

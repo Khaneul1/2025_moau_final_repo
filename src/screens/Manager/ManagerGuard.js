@@ -2,44 +2,27 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import SemiBoldText from '../../components/customText/SemiBoldText';
 import PageNavHeader from '../../components/nav/PageNavHeader';
-import { getGroup, getGroupMembers } from '../../services/groupService';
-import { getMyProfile } from '../../services/authService';
 
-const ManagerGuard = ({ navigation, route }) => {
-  const teamId = route?.params?.teamId;
-  const [isAdmin, setIsAdmin] = useState(null);
+const ManagerGuard = ({ navigation }) => {
+  const [isAdmin, setIsAdmin] = useState(true); //나중에 false로 바꿀 것
+
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = await AsyncStorage.getItem("adminToken");
+  //     setIsAdmin(!!token);
+  //   })();
 
   useEffect(() => {
-    (async () => {
-      try {
-        const me = await getMyProfile();
-        // 그룹 정보
-        const group = await getGroup(teamId);
-        // 그룹 멤버 목록 (역할 확인)
-        const members = await getGroupMembers(teamId);
-        // 내 역할 찾기
-        const myMemberInfo = members.find(m => m.userId === me.id);
-        const myRole = myMemberInfo?.role;
+    if (isAdmin === true) {
+      navigation.replace('ManagerMain');
+    }
+  }, [isAdmin, navigation]);
 
-        const adminCheck =
-          group.ownerId === me.id || myRole === 'ADMIN' || myRole === 'OWNER';
-
-        setIsAdmin(adminCheck);
-
-        if (adminCheck) {
-          navigation.navigate('ManagerMain', { teamId });
-        }
-      } catch (err) {
-        console.warn('관리자 권한 확인 실패 : ', err);
-        setIsAdmin(false);
-      }
-    })();
-  }, []);
   return (
     <View style={styles.container}>
       <PageNavHeader pageName="관리자" navigation={navigation} />
 
-      {isAdmin === false && (
+      {!isAdmin && (
         <>
           <View style={styles.overlay} />
 

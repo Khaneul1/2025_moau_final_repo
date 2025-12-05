@@ -23,6 +23,24 @@ const GroupMain = ({ route, navigation }) => {
   const [showMonthly, setShowMonthly] = useState(false);
   const calendarRef = useRef(null);
 
+  const mockNotices = [
+    {
+      id: 1,
+      title: '이번주 정기모임 및 공지사항',
+      content: '1. 정기모임 \n 일시: 2025/11/19(수) 18:00 ~',
+      date: '2025-11-18 10:21',
+      link: '/romang/notice/1',
+    },
+    {
+      id: 2,
+      title: '특강 참여 공지',
+      content:
+        '금일 13시와 16시 두 차례에 걸쳐 특강을 진행합니다. 창업동아리 학생들을 위해 초청한 강사분들이니 많은 참석 부탁드립니다.',
+      date: '2025-11-14 13:22',
+      link: '/romang/notice/2',
+    },
+  ];
+
   const loadGroup = async () => {
     try {
       const data = await getGroup(teamId);
@@ -37,6 +55,15 @@ const GroupMain = ({ route, navigation }) => {
   useEffect(() => {
     loadGroup();
   }, []);
+
+  useEffect(() => {
+    if (group !== null) {
+      console.log('group data: ', group);
+    }
+  }, [group]);
+
+  const noticesToRender =
+    group?.notices && group.notices.length > 0 ? group.notices : mockNotices;
 
   if (loading) {
     return (
@@ -88,7 +115,7 @@ const GroupMain = ({ route, navigation }) => {
               >
                 최근 공지
               </SemiBoldText>
-              {(!group?.notices || group.notices.length === 0) && (
+              {/* {(!group?.notices || group.notices.length === 0) && (
                 <View style={styles.noticeCard}>
                   <Image
                     source={require('../../assets/img/postIcon.png')}
@@ -100,8 +127,8 @@ const GroupMain = ({ route, navigation }) => {
                     </SemiBoldText>
                   </View>
                 </View>
-              )}
-              {group?.notices?.slice(0, 2).map(notices => {
+              )} */}
+              {noticesToRender.slice(0, 2).map(notices => {
                 const limitedContent =
                   notices.content.length > 22
                     ? notices.content.slice(0, 22) + '...'
@@ -161,6 +188,7 @@ const GroupMain = ({ route, navigation }) => {
                       navigation.navigate('GroupAccountDetail', {
                         teamId: group.id,
                         image: group.image,
+                        groupName: group.name,
                       })
                     }
                   >
