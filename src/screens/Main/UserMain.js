@@ -146,6 +146,7 @@ const UserMain = ({ navigation }) => {
 
         <View style={styles.bodyContainer}>
           <CalendarView
+            teamId={teamId}
             ref={calendarRef}
             initialMode="week"
             style={{ marginBottom: 0 }}

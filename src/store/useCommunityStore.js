@@ -34,7 +34,7 @@ export const useCommunityStore = create((set, get) => ({
       });
     } catch (err) {
       set({ loading: false });
-      console.log('게시글 상세 조쇠 실패: ', err);
+      console.log('게시글 상세 조회 실패: ', err);
     }
   },
 }));

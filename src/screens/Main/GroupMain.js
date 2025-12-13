@@ -94,7 +94,11 @@ const GroupMain = ({ route, navigation }) => {
         >
           <View style={styles.groupCard}>
             <View style={styles.calendarContainer}>
-              <CalendarView ref={calendarRef} initialMode="week" />
+              <CalendarView
+                teamId={teamId}
+                ref={calendarRef}
+                initialMode="week"
+              />
 
               <TouchableOpacity
                 style={styles.CalenderButton}
