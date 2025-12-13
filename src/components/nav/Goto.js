@@ -108,7 +108,7 @@ const Goto = () => {
                   <View style={styles.togoButton}>
                     <TouchableOpacity
                       onPress={() =>
-                        navigation.navigate('GroupNoticeDetail', {
+                        navigation.navigate('GroupNoticeList', {
                           groupId: group.id,
                           groupName: group.name,
                         })
