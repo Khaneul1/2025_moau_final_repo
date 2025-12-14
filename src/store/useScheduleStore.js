@@ -26,6 +26,7 @@ export const useScheduleStore = create((set, get) => ({
         startsAt: item.startsAt,
         endsAt: item.endsAt,
         description: item.description,
+        teamId: item.teamId,
       }));
 
       set({ schedules: mapped, loading: false });
@@ -61,6 +62,11 @@ export const useScheduleStore = create((set, get) => ({
 
   // 팀 일정 추가
   addSchedule: async (teamId, payload) => {
+    if (!teamId) {
+      console.warn('teamId가 없습니다. 팀 일정을 추가할 수 없습니다.');
+      return;
+    }
+
     try {
       set({ loading: true });
       const created = await createTeamSchedule(teamId, payload);
@@ -71,6 +77,7 @@ export const useScheduleStore = create((set, get) => ({
           ...state.schedules,
           {
             id: scheduleId,
+            scheduleId: scheduleId,
             title: payload.title,
             start: dayjs(payload.startsAt).format('YYYY-MM-DD'),
             end: dayjs(payload.endsAt).format('YYYY-MM-DD'),
@@ -78,7 +85,7 @@ export const useScheduleStore = create((set, get) => ({
             startsAt: payload.startsAt,
             endsAt: payload.endsAt,
             description: payload.description ?? payload.title,
-            teamId: teamId,
+            teamId,
           },
         ],
         loading: false,

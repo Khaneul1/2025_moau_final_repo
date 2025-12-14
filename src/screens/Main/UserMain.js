@@ -153,7 +153,12 @@ const UserMain = ({ navigation }) => {
           />
           <TouchableOpacity
             style={styles.detailButton}
-            onPress={() => navigation.navigate('MonthCalendar')}
+            onPress={() =>
+              navigation.navigate('MonthCalendar', {
+                teamId: null,
+                source: 'user',
+              })
+            }
           >
             <RegularText style={styles.detailText}>
               {showMonthly ? '닫기' : '자세히'}

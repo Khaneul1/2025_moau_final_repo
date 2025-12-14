@@ -102,7 +102,12 @@ const GroupMain = ({ route, navigation }) => {
 
               <TouchableOpacity
                 style={styles.CalenderButton}
-                onPress={() => navigation.navigate('MonthCalendar')}
+                onPress={() =>
+                  navigation.navigate('MonthCalendar', {
+                    teamId,
+                    source: 'group',
+                  })
+                }
               >
                 <RegularText style={styles.CalenderTextButton}>
                   {showMonthly ? '닫기' : '자세히'}

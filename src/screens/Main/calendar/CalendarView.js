@@ -147,6 +147,7 @@ const CalendarView = forwardRef(
 
       const scheduleData = {
         title: newEventTitle,
+        description: '',
         location: eventLocation || '',
         startsAt: startsAt.toISOString(),
         endsAt: endsAt.toISOString(),
@@ -154,11 +155,12 @@ const CalendarView = forwardRef(
         teamId: teamId || null,
       };
 
-      if (teamId) {
-        await addSchedule(teamId, scheduleData); // 팀 일정
-      } else {
-        await addSchedule(null, scheduleData); // 개인 일정
+      if (!teamId) {
+        console.warn('teamId가 없습니다. 팀 일정을 추가할 수 없습니다.');
+        return;
       }
+
+      await addSchedule(teamId, scheduleData);
 
       setModalVisible(false);
     };
@@ -206,6 +208,34 @@ const CalendarView = forwardRef(
       } else {
         openModal(date);
       }
+    };
+
+    // 날짜별 위치 판단 함수 추가!!!
+    const getRangePosition = (event, date) => {
+      const target = dayjs(date).startOf('day');
+      const start = dayjs(event.startsAt).startOf('day');
+      const end = dayjs(event.endsAt).startOf('day');
+
+      if (start.isSame(end)) return 'single'; //하루짜리 일정
+
+      if (target.isSame(start)) return 'start';
+      if (target.isSame(end)) return 'end';
+      if (target.isAfter(start) && target.isBefore(end)) return 'middle';
+      return null;
+    };
+
+    // 기간 일정은 항상 위, 하루 일정은 아래로 강제,,,
+    const getSortedEventsForDate = date => {
+      return getEventForDate(date)
+        .slice()
+        .sort((a, b) => {
+          const aIsRange = !dayjs(a.startsAt).isSame(dayjs(a.endsAt), 'day');
+          const bIsRange = !dayjs(b.startsAt).isSame(dayjs(b.endsAt), 'day');
+
+          if (aIsRange && !bIsRange) return -1;
+          if (!aIsRange && bIsRange) return 1;
+          return dayjs(a.startsAt).diff(dayjs(b.startsAt));
+        });
     };
 
     return (
@@ -257,25 +287,43 @@ const CalendarView = forwardRef(
               </SemiBoldText>
 
               {/* 그 날짜에 속한 이벤트들을 표시함! (간단한 border 박스로) */}
+              {/* 그 날짜에 속한 이벤트들을 표시 */}
               <View style={styles.eventContainer}>
-                {getEventForDate(date).map(event => (
-                  <TouchableOpacity
-                    key={event.title}
-                    onPress={() => openDetailModal(event)}
-                    activeOpacity={0.8}
-                    style={styles.eventTouchable}
-                  >
-                    <View style={styles.eventHighlight}>
-                      <RegularText
-                        style={styles.eventText}
-                        numberOfLines={2}
-                        ellipsizeMode="tail"
+                {getSortedEventsForDate(date).map((event, index) => {
+                  const rangeType = getRangePosition(event, date);
+
+                  return (
+                    <TouchableOpacity
+                      //store에서는 id: scheduleId 이므로 event.id로 수정
+                      key={`${event.id ?? 'temp'}-${date.format(
+                        'YYYY-MM-DD',
+                      )}-${index}`}
+                      onPress={() => openDetailModal(event)}
+                      activeOpacity={0.8}
+                      style={styles.eventTouchable}
+                    >
+                      <View
+                        style={[
+                          styles.eventRangeBox,
+                          rangeType === 'start' && styles.eventRangeStart,
+                          rangeType === 'middle' && styles.eventRangeMiddle,
+                          rangeType === 'end' && styles.eventRangeEnd,
+                          rangeType === 'single' && styles.eventHighlight,
+                        ]}
                       >
-                        {event.title}
-                      </RegularText>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                        {(rangeType === 'start' || rangeType === 'single') && (
+                          <RegularText
+                            style={styles.eventText}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {event.title}
+                          </RegularText>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </TouchableOpacity>
           ))}
@@ -543,7 +591,7 @@ const styles = StyleSheet.create({
     width: '13%',
     minHeight: 70,
     alignItems: 'center',
-    marginVertical: 4,
+    marginVertical: 8,
     marginTop: 30,
     paddingBottom: 6,
   },
@@ -563,10 +611,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEE7FF',
     borderRadius: 6,
     paddingHorizontal: 6,
-    marginTop: 4,
-    paddingVertical: 6,
-    alignItems: 'flex-start',
-    alignSelf: 'stretch',
+    // marginTop: 4,
+    paddingVertical: 4,
+    // alignItems: 'flex-start',
+    // alignSelf: 'stretch',
   },
   eventText: {
     fontSize: 12,
@@ -659,18 +707,21 @@ const styles = StyleSheet.create({
   },
   eventRangeBox: {
     backgroundColor: '#EEE7FF',
-    height: 25,
+    height: 22,
     justifyContent: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   eventRangeStart: {
     borderTopLeftRadius: 8,
     borderBottomLeftRadius: 8,
     paddingLeft: 6,
+    marginLeft: 0,
   },
   eventRangeMiddle: {
-    backgroundColor: '#EEE7FF',
+    // backgroundColor: '#EEE7FF',
     borderRadius: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
   },
   eventRangeEnd: {
     borderTopRightRadius: 8,

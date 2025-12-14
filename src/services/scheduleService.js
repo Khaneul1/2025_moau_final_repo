@@ -65,7 +65,7 @@ export const updateSchedule = async (scheduleId, payload) => {
       title: payload.title,
       description: payload.description || '',
       location: payload.location || null,
-      startsAt: payload.startAt,
+      startsAt: payload.startsAt,
       endsAt: payload.endsAt,
       isAllDay: payload.isAllDay ?? false,
     };
