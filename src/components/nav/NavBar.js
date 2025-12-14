@@ -21,9 +21,7 @@ const NavBar = ({ title, teamId }) => {
       <BoldText style={styles.groupName}>{title}</BoldText>
       <View style={styles.iconGroup}>
         <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('ManagerGuard', { teamId: teamId })
-          }
+          onPress={() => navigation.navigate('ManagerGuard', { teamId })}
         >
           <Image
             source={require('../../assets/img/managerIcon.png')}

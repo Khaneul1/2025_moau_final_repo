@@ -5,7 +5,8 @@ export const createGroup = async data => {
     const payload = {
       name: data.name,
       description: data.description || '',
-      image: data.image || null,
+      duesPeriod: data.duesPeriod || 'MONTHLY',
+      duesAmount: data.duesAmount !== undefined ? Number(data.duesAmount) : 0,
     };
 
     const response = await api.post('/teams', payload);
@@ -19,7 +20,7 @@ export const createGroup = async data => {
 export const joinGroupByCode = async inviteCode => {
   try {
     const response = await api.post('/teams/join-requests', {
-      invite_code: inviteCode,
+      inviteCode,
     });
     return response.data;
   } catch (error) {
@@ -84,6 +85,87 @@ export const getGroupMembers = async teamId => {
     return response.data;
   } catch (error) {
     console.error('그룹 멤버 조회 에러:', error);
+    throw error;
+  }
+};
+
+export const kickMember = async (teamId, userId) => {
+  try {
+    const response = await api.delete(`/teams/${teamId}/members/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('멤버 퇴출 실패:', error);
+    throw error;
+  }
+};
+
+export const updateMemberRole = async (teamId, userId, role) => {
+  try {
+    const response = await api.patch(
+      `/teams/${teamId}/owner/members/${userId}/role`,
+      {
+        role,
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.error('멤버 권한 변경 실패:', error);
+    throw error;
+  }
+};
+
+export const transferOwner = async (teamId, newOwnerUserId) => {
+  try {
+    const response = await api.patch(`/teams/${teamId}/owner/transfer`, {
+      newOwnerUserId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('팀장 위임 실패:', error);
+    throw error;
+  }
+};
+
+export const leaveTeam = async teamId => {
+  try {
+    const response = await api.post(`/teams/${teamId}/members/leave`);
+    return response.data;
+  } catch (error) {
+    console.error('팀 탈퇴 실패:', error);
+    throw error;
+  }
+};
+
+export const getJoinRequests = async teamId => {
+  try {
+    const response = await api.get(`/teams/join-requests/${teamId}`);
+    return response.data;
+  } catch (error) {
+    console.error('가입 요청 목록 조회 실패:', error);
+    throw error;
+  }
+};
+
+export const approveJoinRequest = async (teamId, requestId) => {
+  try {
+    const response = await api.post(
+      `/teams/join-requests/${teamId}/${requestId}/approve`,
+    );
+    return response.data;
+  } catch (error) {
+    console.error('가입 승인 실패:', error);
+    throw error;
+  }
+};
+
+export const rejectJoinRequest = async (teamId, requestId) => {
+  try {
+    const response = await api.post(
+      `/teams/join-requests/${teamId}/${requestId}/reject`,
+    );
+    return response.data;
+  } catch (error) {
+    console.error('가입 거절 실패:', error);
     throw error;
   }
 };

@@ -12,20 +12,23 @@ import {
 } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
 import SemiBoldText from '../../../components/customText/SemiBoldText';
-import ManagePageNavHeader from '../../../components/nav/ManagePageNavHeader';
-import { getGroup, updateGroup } from '../../../services/groupService';
+import {
+  getGroup,
+  updateGroup,
+  deleteGroup,
+} from '../../../services/groupService';
 import { useGroupStore } from '../../../store/useGroupStore';
-import { deleteGroup } from '../../../services/groupService';
+import BoldText from '../../../components/customText/BoldText';
 
 const GroupManage = ({ route, navigation }) => {
   const params = route?.params || {};
+  const groupImage =
+    route?.params?.groupImage || require('../../../assets/groupImg/group3.png');
 
   const {
     teamId = params.teamId,
-    groupImage = params.groupImage,
     groupName = params.groupName,
     groupDescription = params.groupDescription,
-    groupCode = params.groupCode,
   } = params;
 
   const { fetchGroups } = useGroupStore();
@@ -35,6 +38,7 @@ const GroupManage = ({ route, navigation }) => {
   // const [payAccount, setPayAccount] = useState('');
   const [payAmount, setPayAmount] = useState('');
 
+  const [groupCode, setGroupCode] = useState('');
   const [selectedCycle, setSelectedCycle] = useState('');
   const [openDropdown, setOpenDropdown] = useState(false);
   const [dropdownLayoutY, setDropdownLayoutY] = useState(0);
@@ -44,6 +48,7 @@ const GroupManage = ({ route, navigation }) => {
 
   const [loading, setLoading] = useState(false);
   const [groupData, setGroupData] = useState(null);
+  const [accountInfo, setAccountInfo] = useState(null);
 
   const feeCycles = ['분기', '매월', '3개월', '6개월', '12개월'];
 
@@ -67,19 +72,19 @@ const GroupManage = ({ route, navigation }) => {
 
   // 그룹 정보 조회
   useEffect(() => {
-    const fetchGroupData = async () => {
-      if (!teamId) return;
+    if (!teamId) return;
 
+    const fetchGroupData = async () => {
       try {
         setLoading(true);
         const data = await getGroup(teamId);
         console.log('그룹 정보 조회 성공:', data);
 
-        setGroupData(data);
+        // setGroupData(data);
         setEditName(data.name || groupName);
         setEditDesc(data.description || groupDescription);
-        // setPayAccount(data.accountNumber || data.account_number || '');
         setPayAmount(data.duesAmount?.toString() || '');
+        setGroupCode(data.inviteCode || '');
 
         // 회비 주기가 있으면 프론트엔드 형식으로 변환
         if (data.duesPeriod) {
@@ -95,34 +100,65 @@ const GroupManage = ({ route, navigation }) => {
     fetchGroupData();
   }, [teamId]);
 
-  // const handleSave = async () => {
-  //   if (loading) return;
-
-  //   if (!editName.trim()) {
-  //     Alert.alert("알림", "그룹 이름을 입력해 주세요");
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-
-  //     const updateData = {
-  //       name: editName.trim(),
-  //       description: editDesc.trim(),
-  //     };
-
-  //   }
-  // }
-
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.container}>
-        <ScrollView ref={scrollRef} style={{ flex: 1 }}>
-          <ManagePageNavHeader pageName="그룹 관리" navigation={navigation} />
+        <View style={styles.navContainer}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Image
+              source={require('../../../assets/img/backPurpleIcon.png')}
+              style={styles.backIconStyle}
+            />
+          </TouchableOpacity>
+          <BoldText style={styles.pageName}>그룹 관리</BoldText>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => {
+              Alert.alert(
+                '그룹 삭제',
+                '정말로 이 그룹을 삭제하시겠습니까?\n삭제한 그룹은 복구할 수 없습니다.',
+                [
+                  { text: '취소', style: 'cancel' },
+                  {
+                    text: '삭제',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        setLoading(true);
 
+                        const result = await deleteGroup(teamId);
+                        console.log('그룹 삭제 성공: ', result);
+
+                        await fetchGroups();
+
+                        Alert.alert('삭제 완료', '그룹이 삭제되었습니다', [
+                          {
+                            text: '확인',
+                            onPress: () => navigation.navigate('UserMain'),
+                          },
+                        ]);
+                      } catch (error) {
+                        console.error('그룹 삭제 에러:', error);
+                        Alert.alert('오류', '그룹 삭제에 실패했습니다.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    },
+                  },
+                ],
+              );
+            }}
+          >
+            <SemiBoldText style={styles.deleteButtonText}>삭제</SemiBoldText>
+          </TouchableOpacity>
+        </View>
+        <ScrollView ref={scrollRef} style={{ flex: 1 }}>
           <Image source={groupImage} style={styles.groupImage} />
 
           <View style={styles.inputSection}>
@@ -157,20 +193,9 @@ const GroupManage = ({ route, navigation }) => {
             <View style={styles.inputWrapper}>
               <SemiBoldText style={styles.inputLabel}>그룹 코드</SemiBoldText>
               <SemiBoldText style={[styles.textInput, { color: '#ADADAD' }]}>
-                {groupCode}
+                {groupCode || '로딩 중...'}
               </SemiBoldText>
             </View>
-
-            {/* <View style={styles.inputWrapper}>
-              <SemiBoldText style={styles.inputLabel}>계좌번호</SemiBoldText>
-              <TextInput
-                placeholder="그룹 계좌번호를 입력하세요"
-                placeholderTextColor="#ADADAD"
-                value={payAccount}
-                onChangeText={setPayAccount}
-                style={styles.textInput}
-              />
-            </View> */}
 
             <View style={styles.inputWrapper}>
               <SemiBoldText style={styles.inputLabel}>회비 금액</SemiBoldText>
@@ -248,50 +273,21 @@ const GroupManage = ({ route, navigation }) => {
                 </View>
               )}
             </View>
+
             <TouchableOpacity
               style={[styles.saveButton, loading && styles.saveButtonDisabled]}
               onPress={async () => {
-                if (loading) return;
-
-                if (!editName.trim()) {
-                  Alert.alert('알림', '그룹 이름을 입력해 주세요.');
-                  return;
-                }
-
                 try {
                   setLoading(true);
 
-                  // 수정할 데이터 준비
-                  const updateData = {
-                    name: editName.trim(),
-                    description: editDesc.trim(),
-                    duesAmount: payAmount ? parseInt(payAmount, 10) : 0,
-                    duesPeriod: selectedCycle
-                      ? feeCycleMap[selectedCycle]
-                      : 'NONE',
-                  };
-
-                  console.log('그룹 수정 요청: ', updateData);
-
-                  // 계좌번호가 있으면 추가
-                  // if (payAccount.trim()) {
-                  //   updateData.accountNumber = payAccount.trim();
-                  // }
-
-                  const result = await updateGroup(teamId, updateData);
-                  console.log('그룹 수정 성공: ', result);
+                  await updateGroup(teamId, {
+                    name: editName,
+                    description: editDesc,
+                    duesAmount: Number(payAmount),
+                    duesPeriod: feeCycleMap[selectedCycle],
+                  });
 
                   await fetchGroups();
-
-                  // 회비 금액이 있으면 추가
-                  // if (payAmount.trim()) {
-                  //   updateData.feeAmount = parseInt(payAmount.trim(), 10);
-                  // }
-
-                  // 회비 주기가 선택되었으면 추가
-                  // if (selectedCycle) {
-                  //   updateData.feeCycle = feeCycleMap[selectedCycle];
-                  // }
 
                   Alert.alert('성공', '그룹 정보가 저장되었습니다.', [
                     {
@@ -301,13 +297,11 @@ const GroupManage = ({ route, navigation }) => {
                   ]);
                 } catch (error) {
                   console.error('그룹 수정 에러:', error);
-                  console.error('에러 상세:', error.response?.data);
-                  Alert.alert('오류', '그룹 정보 수정에 실패했습니다.');
+                  Alert.alert('오류', '그룹 정보 저장에 실패했습니다.');
                 } finally {
                   setLoading(false);
                 }
               }}
-              // disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
@@ -315,49 +309,6 @@ const GroupManage = ({ route, navigation }) => {
                 <SemiBoldText style={styles.buttonText}>저장하기</SemiBoldText>
               )}
             </TouchableOpacity>
-
-            {/* <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => {
-                Alert.alert(
-                  '그룹 삭제',
-                  '정말로 이 그룹을 삭제하시겠습니까?\n삭제한 그룹은 복구할 수 없습니다.',
-                  [
-                    { text: '취소', style: 'cancel' },
-                    {
-                      text: '삭제',
-                      style: 'destructive',
-                      onPress: async () => {
-                        try {
-                          setLoading(true);
-
-                          const result = await deleteGroup(teamId);
-                          console.log('그룹 삭제 성공: ', result);
-
-                          await fetchGroups();
-
-                          Alert.alert('삭제 완료', '그룹이 삭제되었습니다', [
-                            {
-                              text: '확인',
-                              onPress: () => navigation.navigate('UserMain'),
-                            },
-                          ]);
-                        } catch (error) {
-                          console.error('그룹 삭제 에러:', error);
-                          Alert.alert('오류', '그룹 삭제에 실패했습니다.');
-                        } finally {
-                          setLoading(false);
-                        }
-                      },
-                    },
-                  ],
-                );
-              }}
-            >
-              <SemiBoldText style={styles.deleteButtonText}>
-                그룹 삭제
-              </SemiBoldText>
-            </TouchableOpacity> */}
           </View>
         </ScrollView>
       </View>
@@ -473,5 +424,41 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 26,
     color: '#FFFFFF',
+  },
+  navContainer: {
+    marginTop: 70,
+    flexDirection: 'row',
+    marginBottom: 50,
+    justifyContent: 'flex-end',
+  },
+  backIconStyle: {
+    width: 37,
+    height: 37,
+  },
+  backButton: {
+    width: 50,
+    height: 50,
+    justifyContent: 'flex-start',
+    position: 'absolute',
+    left: 16,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  pageName: {
+    fontSize: 27,
+    color: '#7242E2',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    top: 2.7,
+  },
+  deleteButton: {
+    marginRight: 35,
+    top: 7,
+  },
+  deleteButtonText: {
+    fontSize: 20,
+    color: '#FF0000',
   },
 });

@@ -6,7 +6,6 @@ import {
   Modal,
   TextInput,
   FlatList,
-  ScrollView,
   TouchableWithoutFeedback,
 } from 'react-native';
 import SemiBoldText from '../../../components/customText/SemiBoldText';
@@ -210,19 +209,19 @@ const CalendarView = forwardRef(
       }
     };
 
-    // 날짜별 위치 판단 함수 추가!!!
-    const getRangePosition = (event, date) => {
-      const target = dayjs(date).startOf('day');
-      const start = dayjs(event.startsAt).startOf('day');
-      const end = dayjs(event.endsAt).startOf('day');
+    // // 날짜별 위치 판단 함수 추가!!!
+    // const getRangePosition = (event, date) => {
+    //   const target = dayjs(date).startOf('day');
+    //   const start = dayjs(event.startsAt).startOf('day');
+    //   const end = dayjs(event.endsAt).startOf('day');
 
-      if (start.isSame(end)) return 'single'; //하루짜리 일정
+    //   if (start.isSame(end)) return 'single'; //하루짜리 일정
 
-      if (target.isSame(start)) return 'start';
-      if (target.isSame(end)) return 'end';
-      if (target.isAfter(start) && target.isBefore(end)) return 'middle';
-      return null;
-    };
+    //   if (target.isSame(start)) return 'start';
+    //   if (target.isSame(end)) return 'end';
+    //   if (target.isAfter(start) && target.isBefore(end)) return 'middle';
+    //   return null;
+    // };
 
     // 기간 일정은 항상 위, 하루 일정은 아래로 강제,,,
     const getSortedEventsForDate = date => {
@@ -238,9 +237,24 @@ const CalendarView = forwardRef(
         });
     };
 
+    const TEAM_COLORS = [
+      { bg: '#EEE7FF', text: '#3E247C' }, // 보라
+      { bg: '#E7ECFF', text: '#24307C' }, // 파랑
+      { bg: '#EEE7FF', text: '#3E247C' }, // 초록
+      { bg: '#FFF1E6', text: '#A85A1F' }, // 주황
+    ];
+
+    // teamId → 색상 고정 매핑
+    const getColorByTeamId = teamId => {
+      if (!teamId) {
+        return { bg: '#F1F1F1', text: '#ADADAD' }; // 개인/기본
+      }
+      const index = teamId % TEAM_COLORS.length;
+      return TEAM_COLORS[index];
+    };
+
     return (
       <View style={styles.container}>
-        {/* <ScrollView> */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handlePrev}>
             <SemiBoldText style={styles.arrow}>{'<'}</SemiBoldText>
@@ -287,39 +301,27 @@ const CalendarView = forwardRef(
               </SemiBoldText>
 
               {/* 그 날짜에 속한 이벤트들을 표시함! (간단한 border 박스로) */}
-              {/* 그 날짜에 속한 이벤트들을 표시 */}
               <View style={styles.eventContainer}>
-                {getSortedEventsForDate(date).map((event, index) => {
-                  const rangeType = getRangePosition(event, date);
+                {getEventForDate(date).map(event => {
+                  const { bg, text } = getColorByTeamId(event.teamId);
 
                   return (
                     <TouchableOpacity
-                      //store에서는 id: scheduleId 이므로 event.id로 수정
-                      key={`${event.id ?? 'temp'}-${date.format(
-                        'YYYY-MM-DD',
-                      )}-${index}`}
+                      key={event.id}
                       onPress={() => openDetailModal(event)}
                       activeOpacity={0.8}
                       style={styles.eventTouchable}
                     >
                       <View
-                        style={[
-                          styles.eventRangeBox,
-                          rangeType === 'start' && styles.eventRangeStart,
-                          rangeType === 'middle' && styles.eventRangeMiddle,
-                          rangeType === 'end' && styles.eventRangeEnd,
-                          rangeType === 'single' && styles.eventHighlight,
-                        ]}
+                        style={[styles.eventHighlight, { backgroundColor: bg }]}
                       >
-                        {(rangeType === 'start' || rangeType === 'single') && (
-                          <RegularText
-                            style={styles.eventText}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {event.title}
-                          </RegularText>
-                        )}
+                        <RegularText
+                          style={[styles.eventText, { color: text }]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {event.title}
+                        </RegularText>
                       </View>
                     </TouchableOpacity>
                   );
@@ -461,12 +463,12 @@ const CalendarView = forwardRef(
                     <TouchableOpacity
                       onPress={() => {
                         setModalVisible(false);
-                        //   setEventType(null);
-                        //   setStartDate(null);
-                        //   setEndDate(null);
-                        //   setEventLocation('');
-                        //   setEventStartTime(null);
-                        //   setNewEventTitle('');
+                        setEventType(null);
+                        setStartDate(null);
+                        setEndDate(null);
+                        setEventLocation('');
+                        setEventStartTime(null);
+                        setNewEventTitle('');
                       }}
                       style={styles.cancelBtn}
                     >
@@ -539,7 +541,6 @@ const CalendarView = forwardRef(
             </View>
           </View>
         </Modal>
-        {/* </ScrollView> */}
       </View>
     );
   },
@@ -611,10 +612,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEE7FF',
     borderRadius: 6,
     paddingHorizontal: 6,
-    // marginTop: 4,
+    marginTop: 4,
     paddingVertical: 4,
-    // alignItems: 'flex-start',
-    // alignSelf: 'stretch',
+    alignItems: 'flex-start',
+    alignSelf: 'stretch',
   },
   eventText: {
     fontSize: 12,

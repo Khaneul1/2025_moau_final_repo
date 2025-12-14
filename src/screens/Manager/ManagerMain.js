@@ -4,20 +4,54 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { groupReceiptData } from '../../data/receipts';
 import SemiBoldText from '../../components/customText/SemiBoldText';
 import BoldText from '../../components/customText/BoldText';
 
+import { getGroup } from '../../services/groupService';
+import { useFocusEffect } from '@react-navigation/native';
+
 const ManagerMain = ({ navigation, route }) => {
-  const groupId = route?.params?.groupId || 1;
+  const teamId = route?.params?.teamId;
+  const groupId = route?.params?.groupId || 2;
   const groupData = groupReceiptData[groupId] || [];
+
   const receiptList = groupData.receipts;
-  const groupName = groupData.groupName;
-  const groupImage = groupData.groupImage;
   const requestCount = receiptList.length;
+  const groupImage = groupData.groupImage;
+  const [groupInfo, setGroupInfo] = useState({
+    name: '',
+    image: groupImage,
+  });
+  const [loading, setLoading] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!teamId) return;
+
+      const fetchGroupName = async () => {
+        try {
+          setLoading(true);
+          const group = await getGroup(teamId);
+
+          setGroupInfo(prev => ({
+            ...prev,
+            name: group.name, // ✅ 백엔드 연동 포인트
+          }));
+        } catch (e) {
+          console.log('그룹 정보 조회 실패', e);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchGroupName();
+    }, [teamId]),
+  );
 
   return (
     <LinearGradient
@@ -38,17 +72,17 @@ const ManagerMain = ({ navigation, route }) => {
                 style={styles.backIconStyle}
               />
             </TouchableOpacity>
-            <BoldText style={styles.groupName}>{groupName}</BoldText>
+            <BoldText style={styles.groupName}>{groupInfo?.name}</BoldText>
           </View>
 
           <View style={styles.groupInfoCard}>
-            <Image source={groupImage} style={styles.groupImg} />
+            <Image source={groupInfo.image} style={styles.groupImg} />
             <TouchableOpacity
               style={styles.acceptConfirmButton}
               onPress={() => navigation.navigate('RequestJoin')}
             >
               <SemiBoldText style={styles.groupRequestText}>
-                그룹 승인 요청 6
+                그룹 승인 요청 6건
               </SemiBoldText>
             </TouchableOpacity>
           </View>
@@ -58,7 +92,7 @@ const ManagerMain = ({ navigation, route }) => {
           <View style={styles.secondContainer}>
             <View style={styles.receiptSection}>
               <SemiBoldText style={styles.textSection}>
-                승인 요청된 영수증 {requestCount}
+                승인 요청된 영수증 4
               </SemiBoldText>
               {receiptList.slice(0, 2).map(receipt => (
                 <TouchableOpacity
@@ -186,7 +220,6 @@ const ManagerMain = ({ navigation, route }) => {
                 </View>
               </View>
             </View>
-
             <SemiBoldText style={styles.listText}>그룹 관리</SemiBoldText>
             <View style={styles.accountingSection}>
               <View style={styles.manageCard}>
@@ -201,7 +234,10 @@ const ManagerMain = ({ navigation, route }) => {
                   <TouchableOpacity
                     style={styles.ManageDetailButton}
                     onPress={() =>
-                      navigation.navigate('GroupManage', { groupId })
+                      navigation.navigate('GroupManage', {
+                        teamId,
+                        groupImage: groupInfo.image,
+                      })
                     }
                   >
                     <SemiBoldText style={styles.detailButtonStyle}>

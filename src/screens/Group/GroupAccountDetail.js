@@ -236,16 +236,17 @@ const GroupAccountDetail = ({ navigation, route }) => {
 
       // 촬영 후 임시 영수증 데이터 구성
       const newReceipt = {
-        place: '가맹점 입력 필요',
-        amount: 0,
+        place: '쌍용스토아안서점',
+        amount: 19430,
         date: new Date().toISOString(),
-        card: '정보 없음',
-        author: '작성자',
+        card: '카카오뱅크(5365)',
+        author: '고하늘',
         imageUri: photo.uri,
       };
 
       navigation.navigate('RequestAccept', {
         receipt: newReceipt,
+        receipts: currentGroupData.ReceiptImage,
         group: { teamId },
       });
     } catch (err) {
