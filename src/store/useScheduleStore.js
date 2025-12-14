@@ -42,14 +42,14 @@ export const useScheduleStore = create((set, get) => ({
       const data = await getTeamSchedules(teamId, year, month);
 
       const mapped = data.map(item => ({
-        id: item.id,
+        id: item.scheduleId,
         title: item.title,
         start: dayjs(item.startsAt).format('YYYY-MM-DD'),
         end: dayjs(item.endsAt).format('YYYY-MM-DD'),
         location: item.location,
         startsAt: item.startsAt,
         endsAt: item.endsAt,
-        description: item.description,
+        description: item.description ?? '',
       }));
 
       set({ schedules: mapped, loading: false });
@@ -63,7 +63,8 @@ export const useScheduleStore = create((set, get) => ({
   addSchedule: async (teamId, payload) => {
     try {
       set({ loading: true });
-      const scheduleId = await createTeamSchedule(teamId, payload);
+      const created = await createTeamSchedule(teamId, payload);
+      const scheduleId = created.scheduleId ?? created.id;
 
       set(state => ({
         schedules: [
@@ -76,7 +77,8 @@ export const useScheduleStore = create((set, get) => ({
             location: payload.location,
             startsAt: payload.startsAt,
             endsAt: payload.endsAt,
-            description: payload.description,
+            description: payload.description ?? payload.title,
+            teamId: teamId,
           },
         ],
         loading: false,

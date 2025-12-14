@@ -118,11 +118,12 @@ const CalendarView = forwardRef(
     const onTimeChange = (_, selected) => {
       if (selected) setEventStartTime(dayjs(selected));
       setShowEndPicker(false);
+      setShowTimePicker(false);
     };
 
     //일정 추가
     const addEvent = async () => {
-      if (!newEventTitle.trim() || !startDate || !teamId) return;
+      if (!newEventTitle.trim() || !startDate) return;
 
       const baseStart =
         eventType === 'range' && endDate
@@ -150,6 +151,7 @@ const CalendarView = forwardRef(
         startsAt: startsAt.toISOString(),
         endsAt: endsAt.toISOString(),
         isAllDay: !eventStartTime,
+        teamId: teamId || null,
       };
 
       if (teamId) {
@@ -167,9 +169,19 @@ const CalendarView = forwardRef(
     };
 
     const getEventForDate = date => {
-      return schedules.filter(e =>
-        dayjs(date).isBetween(dayjs(e.startsAt), dayjs(e.endsAt), null, '[]'),
-      );
+      return schedules.filter(e => {
+        const target = dayjs(date).startOf('day');
+        const start = dayjs(e.startsAt).startOf('day');
+        const end = dayjs(e.endsAt).startOf('day');
+
+        const isInDate =
+          target.isSame(start) ||
+          target.isSame(end) ||
+          target.isBetween(start, end, null, '[]');
+
+        const isSameTeam = teamId ? e.teamId === teamId : true;
+        return isInDate && isSameTeam;
+      });
     };
 
     const openDetailModal = event => {
@@ -179,46 +191,6 @@ const CalendarView = forwardRef(
 
     const dates = generateDates();
     const monthName = currentDate.format('YYYY년 M월');
-
-    //   let newEvent = null;
-
-    //   if (eventType === 'day') {
-    //     newEvent = {
-    //       id: Date.now().toString(),
-    //       title: newEventTitle,
-    //       start: selectedDate.format('YYYY-MM-DD'),
-    //       end: selectedDate.format('YYYY-MM-DD'),
-    //       location: eventLocation || null,
-    //       startTime: eventStartTime ? eventStartTime.format('HH:mm') : null,
-    //     };
-    //   } else if (eventType === 'range' && startDate && endDate) {
-    //     //startDate와 endDate가 어느 쪽이 이전인지 검사하고,
-    //     //사용자가 시작일보다 종료일을 앞선 날짜로 선택했을 경우, endDate를 startDate로, startDate를 endDate로 간주한다
-    //     const start = startDate.isBefore(endDate) ? startDate : endDate;
-    //     const end = startDate.isAfter(endDate) ? startDate : endDate;
-    //     newEvent = {
-    //       id: Date.now().toString(),
-    //       title: newEventTitle,
-    //       start: start.format('YYYY-MM-DD'),
-    //       end: end.format('YYYY-MM-DD'),
-    //       location: eventLocation || null,
-    //       startTime: eventStartTime ? eventStartTime.format('HH:mm') : null,
-    //     };
-    //   }
-
-    //   if (newEvent) {
-    //     setEvents(prev => [...prev, newEvent]);
-    //   }
-
-    //   //입력 초기화 후 모달 닫기
-    //   setNewEventTitle('');
-    //   setEventLocation('');
-    //   setEventStartTime(null);
-    //   setStartDate(null);
-    //   setEndDate(null);
-    //   setEventType(null);
-    //   setModalVisible(false);
-    // };
 
     // 날짜 클릭 처리! 이벤트 타입 상태에 따라 행동이 달라짐
     const handleDateSelect = date => {
@@ -235,29 +207,6 @@ const CalendarView = forwardRef(
         openModal(date);
       }
     };
-
-    // // 이벤트 상세 모달 여는 것
-    // const openDetailModal = event => {
-    //   setSelectedEvent(event);
-    //   setDetailModalVisible(true);
-    // };
-
-    // // 이벤트 삭제
-    // const deleteEvent = id => {
-    //   setEvents(events.filter(e => e.id !== id));
-    //   setDetailModalVisible(false);
-    // };
-
-    // // 특정 날짜에 해당하는 이벤트들을 반환 : 포함 범위는 start <= date <= end
-    // const getEventForDate = date => {
-    //   return events.filter(e =>
-    //     dayjs(date).isBetween(dayjs(e.start), dayjs(e.end), null, '[]'),
-    //   );
-    // };
-
-    // // 렌더링 데이터 준비
-    // const dates = generateDates();
-    // const monthName = currentDate.format('YYYY년 M월');
 
     return (
       <View style={styles.container}>
@@ -311,7 +260,7 @@ const CalendarView = forwardRef(
               <View style={styles.eventContainer}>
                 {getEventForDate(date).map(event => (
                   <TouchableOpacity
-                    key={event.id}
+                    key={event.title}
                     onPress={() => openDetailModal(event)}
                     activeOpacity={0.8}
                     style={styles.eventTouchable}
@@ -338,141 +287,148 @@ const CalendarView = forwardRef(
           animationType="fade"
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={styles.modalContainer}>
-            <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-              <View style={styles.modalContent}>
-                <SemiBoldText style={styles.modalTitle}>일정 추가</SemiBoldText>
+          <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+            <View style={styles.modalContainer}>
+              <TouchableWithoutFeedback>
+                <View style={styles.modalContent}>
+                  <SemiBoldText style={styles.modalTitle}>
+                    일정 추가
+                  </SemiBoldText>
 
-                <View style={styles.eventTypeSwitch}>
-                  <TouchableOpacity
-                    style={[
-                      styles.typeBtn,
-                      eventType === 'day' && styles.activeTypeBtn,
-                    ]}
-                    onPress={() => {
-                      setEventType('day');
-                      setStartDate(selectedDate);
-                      setEndDate(selectedDate);
-                    }}
-                  >
-                    <RegularText
+                  <View style={styles.eventTypeSwitch}>
+                    <TouchableOpacity
                       style={[
-                        styles.typeText,
-                        eventType === 'day' && styles.activeTypeBtnText,
+                        styles.typeBtn,
+                        eventType === 'day' && styles.activeTypeBtn,
                       ]}
+                      onPress={() => {
+                        setEventType('day');
+                        setStartDate(selectedDate);
+                        setEndDate(selectedDate);
+                      }}
                     >
-                      하루
-                    </RegularText>
-                  </TouchableOpacity>
-
-                  {/* 기간 선택 시작할 때 startDate가 비어있으면 selectedDate를 기본으로 둠! */}
-                  {/* if (!startDate) setStartDate(selectedDate); */}
-                  <TouchableOpacity
-                    style={[
-                      styles.typeBtn,
-                      eventType === 'range' && styles.activeTypeBtn,
-                    ]}
-                    onPress={() => {
-                      setEventType('range');
-                      setStartDate(selectedDate);
-                      setEndDate(null);
-                    }}
-                  >
-                    <RegularText
-                      style={[
-                        styles.typeText,
-                        eventType === 'range' && styles.activeTypeBtnText,
-                      ]}
-                    >
-                      기간
-                    </RegularText>
-                  </TouchableOpacity>
-                </View>
-
-                {eventType === 'range' && (
-                  <>
-                    <TouchableOpacity onPress={() => setShowEndPicker(true)}>
-                      <SemiBoldText style={styles.modalSub}>
-                        종료일: {endDate?.format('YYYY-MM-DD') || '선택'}
-                      </SemiBoldText>
+                      <RegularText
+                        style={[
+                          styles.typeText,
+                          eventType === 'day' && styles.activeTypeBtnText,
+                        ]}
+                      >
+                        하루
+                      </RegularText>
                     </TouchableOpacity>
-                    {showEndPicker && (
+
+                    {/* 기간 선택 시작할 때 startDate가 비어있으면 selectedDate를 기본으로 둠! */}
+                    {/* if (!startDate) setStartDate(selectedDate); */}
+                    <TouchableOpacity
+                      style={[
+                        styles.typeBtn,
+                        eventType === 'range' && styles.activeTypeBtn,
+                      ]}
+                      onPress={() => {
+                        setEventType('range');
+                        setStartDate(selectedDate);
+                        setEndDate(null);
+                      }}
+                    >
+                      <RegularText
+                        style={[
+                          styles.typeText,
+                          eventType === 'range' && styles.activeTypeBtnText,
+                        ]}
+                      >
+                        기간
+                      </RegularText>
+                    </TouchableOpacity>
+                  </View>
+
+                  {eventType === 'range' && (
+                    <>
+                      <TouchableOpacity onPress={() => setShowEndPicker(true)}>
+                        <SemiBoldText style={styles.modalSub}>
+                          종료일: {endDate?.format('YYYY-MM-DD') || '선택'}
+                        </SemiBoldText>
+                      </TouchableOpacity>
+                      {showEndPicker && (
+                        <DateTimePicker
+                          value={
+                            eventStartTime
+                              ? eventStartTime.toDate()
+                              : new Date()
+                          }
+                          mode="date"
+                          onChange={(_, d) => {
+                            setShowEndPicker(false);
+                            if (d) setEndDate(dayjs(d));
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+
+                  <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+                    <SemiBoldText style={styles.modalSub}>
+                      시작 시간 (선택):{' '}
+                      {eventStartTime
+                        ? eventStartTime.format('HH:mm')
+                        : '선택해 주세요'}
+                    </SemiBoldText>
+                  </TouchableOpacity>
+
+                  {showTimePicker && (
+                    <View style={styles.selectedTime}>
                       <DateTimePicker
                         value={
                           eventStartTime ? eventStartTime.toDate() : new Date()
                         }
-                        mode="date"
-                        onChange={(_, d) => {
-                          setShowEndPicker(false);
-                          if (d) setEndDate(dayjs(d));
-                        }}
+                        mode="time"
+                        display="spinner"
+                        is24Hour={true}
+                        onChange={onTimeChange}
+                        style={{ height: 200 }}
                       />
-                    )}
-                  </>
-                )}
+                    </View>
+                  )}
 
-                <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-                  <SemiBoldText style={styles.modalSub}>
-                    시작 시간 (선택):{' '}
-                    {eventStartTime
-                      ? eventStartTime.format('HH:mm')
-                      : '선택해 주세요'}
-                  </SemiBoldText>
-                </TouchableOpacity>
+                  <TextInput
+                    placeholder="일정을 입력하세요"
+                    placeholderTextColor="#B5B2B2"
+                    value={newEventTitle}
+                    onChangeText={setNewEventTitle}
+                    style={styles.input}
+                  />
 
-                {showTimePicker && (
-                  <View style={styles.selectedTime}>
-                    <DateTimePicker
-                      value={
-                        eventStartTime ? eventStartTime.toDate() : new Date()
-                      }
-                      mode="time"
-                      display="spinner"
-                      is24Hour={true}
-                      onChange={onTimeChange}
-                    />
+                  <TextInput
+                    placeholder="장소를 입력하세요"
+                    placeholderTextColor="#B5B2B2"
+                    value={eventLocation}
+                    onChangeText={setEventLocation}
+                    style={styles.input}
+                  />
+
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity onPress={addEvent} style={styles.addBtn}>
+                      <RegularText style={styles.addText}>추가</RegularText>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        setModalVisible(false);
+                        //   setEventType(null);
+                        //   setStartDate(null);
+                        //   setEndDate(null);
+                        //   setEventLocation('');
+                        //   setEventStartTime(null);
+                        //   setNewEventTitle('');
+                      }}
+                      style={styles.cancelBtn}
+                    >
+                      <RegularText style={styles.cancelText}>취소</RegularText>
+                    </TouchableOpacity>
                   </View>
-                )}
-
-                <TextInput
-                  placeholder="일정을 입력하세요"
-                  placeholderTextColor="#B5B2B2"
-                  value={newEventTitle}
-                  onChangeText={setNewEventTitle}
-                  style={styles.input}
-                />
-
-                <TextInput
-                  placeholder="장소를 입력하세요"
-                  placeholderTextColor="#B5B2B2"
-                  value={eventLocation}
-                  onChangeText={setEventLocation}
-                  style={styles.input}
-                />
-
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity onPress={addEvent} style={styles.addBtn}>
-                    <RegularText style={styles.addText}>추가</RegularText>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => {
-                      setModalVisible(false);
-                      //   setEventType(null);
-                      //   setStartDate(null);
-                      //   setEndDate(null);
-                      //   setEventLocation('');
-                      //   setEventStartTime(null);
-                      //   setNewEventTitle('');
-                    }}
-                    style={styles.cancelBtn}
-                  >
-                    <RegularText style={styles.cancelText}>취소</RegularText>
-                  </TouchableOpacity>
                 </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
         </Modal>
 
         {/* 상세 모달 */}
@@ -489,9 +445,14 @@ const CalendarView = forwardRef(
                 {selectedEvent?.title}
               </SemiBoldText>
 
-              {selectedEvent && selectedEvent.start === selectedEvent.end ? (
+              {/* {selectedEvent?.description && (
+                <RegularText>{selectedEvent.description}</RegularText>
+              )} */}
+
+              {selectedEvent &&
+              dayjs(selectedEvent.startsAt).isSame(selectedEvent.endsAt) ? (
                 <RegularText style={styles.detailSub}>
-                  {selectedEvent.start}
+                  {dayjs(selectedEvent.startsAt).format('YYYY-MM-DD')}
                 </RegularText>
               ) : (
                 <RegularText style={styles.detailSub}>
