@@ -1,97 +1,259 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 📱 MOAU — Management Of All Unified (FE + BE 연동 레포지토리)
 
-# Getting Started
+> 동아리·소모임을 위한 회계 & 협업 통합 관리 앱 — 백엔드 연동 최종 버전  
+> 2025 백석대학교 SmaIt 경진대회 동상
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+<br>
 
-## Step 1: Start Metro
+## 📁 리포지토리 구성 안내
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+이 프로젝트는 리포지토리를 두 개로 분리해 관리했습니다.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+| 리포지토리 | 설명 |
+|---|---|
+| [`2025_MOAU`](https://github.com/Khaneul1/2025_MOAU) | UI 개발 단계 — 로컬 상태 기반으로 화면을 먼저 구성한 프론트엔드 전용 레포 |
+| [`2025_moau_final_repo`](https://github.com/Khaneul1/2025_moau_final_repo) | 연동 완성 단계 — 백엔드 API 연동, 상태 관리, 인증 처리를 포함한 최종 레포 **(현재)** |
 
-```sh
-# Using npm
-npm start
+> **분리한 이유:**  
+> 백엔드 API가 완성되기 전까지 UI 개발을 먼저 진행해야 했고,  
+> 연동 과정에서 예상치 못한 에러 발생 시 UI 버전을 안전하게 보존하기 위해 분리했습니다.  
+> 결과적으로 UI 레포가 기준점이 되어 변경 사항을 명확하게 추적할 수 있었습니다.
 
-# OR using Yarn
-yarn start
+<br>
+
+## 🔍 서비스 소개
+
+동아리 임원이라면 한 번쯤 겪어봤을 것입니다.  
+회비는 카카오톡으로 걷고, 지출은 엑셀로 정리하고, 공지는 단톡 고정으로, 일정은 또 따로 공유하고...
+
+**MOAU**는 동아리·학회·소모임이 **회계, 공지, 일정, 커뮤니티**를 하나의 앱에서 통합 관리할 수 있는 모바일 서비스입니다.  
+팀원 대부분이 실제 동아리 임원 또는 부원이었기에, 직접 겪은 불편함을 기반으로 기능을 설계했습니다.
+
+> 이 프로젝트는 JSP & 서블릿 전공 수업의 중간·기말 프로젝트이자,  
+> 2025 교내 경진대회 출품작이기도 합니다.
+
+<br>
+
+## 🛠 기술 스택
+
+### 프론트엔드
+
+| 기술 | 버전 | 선택 이유 |
+|---|---|---|
+| **React Native CLI** | 0.82.1 | iOS / Android 동시 대응. 현업에서 많이 쓰인다는 말을 듣고 선택했지만, 첫 RN 프로젝트에서 CLI의 환경 설정 복잡도를 실감했음 (아래 후기 참고) |
+| **JavaScript** | — | 팀 전체의 공통 언어로 개발 속도와 가독성을 우선시 |
+| **Zustand** | ^5.0.8 | 로그인 유저 정보·선택된 그룹 ID 등 여러 화면에서 공유되는 상태를 간결하게 관리 |
+| **Axios** | ^1.13.2 | 백엔드 API 호출. 인터셉터를 통해 인증 헤더 반복 처리 일원화 |
+| **React Navigation** | ^7.x | 스택 기반 화면 전환 및 모달 처리 |
+| **AsyncStorage** | ^2.2.0 | 로그인 토큰 로컬 저장 및 자동 로그인 처리 |
+| **@react-native-seoul/kakao-login** | ^5.4.2 | 카카오 OAuth 로그인 네이티브 연동 |
+| **react-native-image-picker** | ^8.2.1 | 영수증 이미지 촬영 및 갤러리 선택 |
+| **react-native-fs** | ^2.20.0 | 이미지 파일 경로 처리 |
+| **dayjs** | ^1.11.19 | 캘린더 날짜 포맷·비교 연산 |
+| **react-native-modal** | ^14.x | 커스텀 모달 UX |
+| **react-native-linear-gradient** | ^2.8.3 | 그라데이션 UI 표현 |
+| **react-native-webview** | ^13.16.0 | 카카오 로그인 웹뷰 처리 |
+
+### 개발 도구
+
+| 도구 | 용도 |
+|---|---|
+| **Xcode** | iOS 빌드 및 시뮬레이터 실행 |
+| **Android Studio** | Android 빌드 및 에뮬레이터 실행 |
+| **Figma** | UI/UX 설계 |
+| **react-native-config** | 환경변수 관리 (API Base URL 등) |
+
+<br>
+
+## ✅ API 연동 완료 / ❌ 미완료 현황
+
+| 기능 | 연동 여부 | 비고 |
+|---|---|---|
+| 카카오 로그인 | ✅ | AsyncStorage 토큰 저장, 자동 로그인 |
+| 그룹 생성 / 입장 요청 | ✅ | |
+| 그룹 정보 조회 (이미지, 회비 잔액 등) | ✅ | 가장 많은 필드명 불일치 에러 발생 |
+| 회계·영수증 목록 조회 | ✅ | |
+| 영수증 촬영 | ✅ | 이미지 선택·촬영 UI 구현 |
+| 영수증 서버 업로드 | ❌ | `multipart/form-data` 연동 미완료 |
+| 일정 등록 | ✅ | |
+| 일정 수정 / 삭제 | ❌ | API 연동 에러 미해결 |
+| 공지·커뮤니티 게시글 조회 | ✅ | |
+| 댓글 / 답글 등록 | ✅ | |
+| 게시글 수정 / 삭제 | ❌ | API 연동 에러 미해결 |
+| 게시글 등록 후 리스트 즉시 반영 | ❌ | 낙관적 업데이트 미구현 |
+| 관리자 페이지 (팀원 관리, 가입 승인) | ✅ | |
+
+<br>
+
+## 🧠 연동 과정에서 부딪힌 것들, 그리고 반성
+
+### 1️⃣ React Native CLI — 현업에서 쓴다길래 냅다 선택했다가
+
+"현업에서 CLI를 많이 쓴다"는 말만 믿고 별 고민 없이 선택했습니다.
+
+하지만 첫 React Native 프로젝트에서 CLI를 선택한 건 생각보다 훨씬 가파른 진입장벽이었습니다.  
+카카오 로그인 하나를 붙이는 데 Podfile·Gradle 설정을 직접 수정해야 했고, Xcode에서 빌드가 깨지면 에러 메시지도 낯설었습니다.
+
+Expo로 시작했다면 환경 설정에 쓴 시간을 기능 구현에 더 집중할 수 있었을 것 같아 아쉬움이 남습니다.
+
+**반성:** 도구를 선택할 때 "많이 쓰인다"는 이유만으로 고르면 안 됩니다. **지금 내 실력과 프로젝트 일정에 맞는 도구**가 무엇인지를 먼저 따져야 한다는 걸 배웠습니다. CLI는 충분히 배울 가치가 있지만, 첫 프로젝트에서 선택하기엔 준비가 부족했습니다.
+
+---
+
+### 2️⃣ 그룹 API 연동 — API 명세서를 보지 않은 대가
+
+MOAU에서 가장 핵심적인 API 연동은 **그룹(팀)** 부분이었습니다.  
+사용자가 선택한 그룹에 따라 그룹 이미지, 회비 잔액, 공지·커뮤니티의 모든 데이터가 달라져야 했기 때문입니다.
+
+그런데 저는 UI 개발 단계 내내 **백엔드 API 명세서를 한 번도 확인하지 않았습니다.**
+
+이유는 단순했습니다. 백엔드 팀이 제 Figma 시안을 보고 구조를 설계한다는 걸 알고 있었기 때문에, "어차피 내 디자인 기준으로 만들겠지"라고 생각했습니다.
+
+실제 연동을 시작하자마자 문제가 터졌습니다.
+```js
+// 내가 쓴 필드명
+groupId, groupName, groupImage
+
+// 백엔드 실제 필드명
+teamId, teamName, profileImage
 ```
 
-## Step 2: Build and run your app
+단순히 이름이 다른 문제처럼 보이지만, 이 불일치가 연쇄적으로 퍼져 있었기 때문에 수정 범위가 생각보다 훨씬 넓었습니다. 화면 하나를 수정하면 다른 화면에서 에러가 터지는 상황이 반복됐습니다.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+**반성:** 이 경험으로 **API 명세서는 연동 직전이 아니라 UI 설계 시작 전에 함께 봐야 한다**는 걸 뼈저리게 깨달았습니다. 프론트와 백엔드가 아무리 긴밀하게 소통해도, 필드명 하나의 차이가 대규모 수정으로 이어질 수 있습니다. 앞으로는 개발 착수 전 명세서 확인을 첫 번째 체크리스트로 두겠습니다.
 
-### Android
+---
 
-```sh
-# Using npm
-npm run android
+### 3️⃣ 공지 & 커뮤니티 게시판 — 분리해서 만든 것을 후회하다
 
-# OR using Yarn
-yarn android
+UI 설계 단계에서 공지와 커뮤니티 게시판의 성격이 다르다고 판단해 페이지를 분리했습니다.
+
+- 공지: 이미지 첨부 + 투표 기능 포함, 관리자만 작성 가능
+- 커뮤니티: 텍스트만, 익명/기명 선택 가능
+
+그런데 연동을 진행하면서 두 게시판이 **목록 조회, 상세 조회, 댓글/답글** 구조가 거의 동일하다는 걸 뒤늦게 깨달았습니다.  
+헤더 타이틀과 입력 폼 일부만 달랐을 뿐, 나머지는 완전히 같은 로직이었습니다.
+
+처음부터 공통 컴포넌트로 추상화하고 props나 상태로 차이점만 분기했다면, 코드 중복도 줄고 수정 포인트도 한 곳으로 모을 수 있었을 것입니다.
+```js
+// 개선했다면 이런 구조가 가능했을 것
+<PostListScreen
+  type="notice"      // 또는 "community"
+  canAttachImage={true}
+  canVote={true}
+/>
 ```
 
-### iOS
+결국 동일한 API 연동 에러를 두 컴포넌트에서 따로따로 수정해야 하는 비효율을 겪었고, 게시글 등록 후 목록에 즉시 반영되는 UX도 두 곳 모두에서 구현을 완수하지 못했습니다.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+**반성:** 유사한 기능은 처음부터 공통 컴포넌트로 묶는 것을 먼저 고려해야 합니다. "지금은 달라 보여도 나중에 합칠 수 있다"는 생각이 오히려 더 많은 수정 비용을 만들었습니다. 컴포넌트 설계는 기능보다 먼저, **변경 가능성과 재사용성을 기준**으로 해야 한다는 걸 배웠습니다.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+---
 
-```sh
-bundle install
+### 4️⃣ 캘린더 — 일자별로 만들었다가 이어지지 않는 일정 때문에 고생하다
+
+캘린더를 처음 구현할 때, 각 날짜 셀을 **독립적인 단위로 따로따로** 렌더링했습니다.
+
+기간 일정(시작일 ~ 종료일)이 추가됐을 때, 캘린더에서 흔히 보는 것처럼 날짜를 가로질러 하나로 이어지는 바(bar) 형태로 표시하고 싶었습니다.
+```
+[ 시작 ][  중간  ][ 끝 ]
 ```
 
-Then, and every time you update your native dependencies, run:
+그런데 날짜 셀이 각각 독립적으로 렌더링되다 보니, 이웃한 셀끼리 스타일을 공유할 방법이 없었습니다. 셀 하나가 자신이 어떤 일정의 "시작인지", "중간인지", "끝인지"를 알 수가 없었기 때문입니다.
 
-```sh
-bundle exec pod install
+결국 나중에서야 **날짜를 주(week) 단위로 묶어서 렌더링해야 한다**는 걸 깨달았습니다. 한 주의 날짜들을 배열로 가지고 있어야, 일정이 해당 주에서 어느 날부터 어느 날까지인지를 계산해 연속된 bar 스타일을 적용할 수 있습니다.
+
+시간 제약으로 구조를 전면 재설계하지는 못했고, 기간 일정의 시각적 연결은 미완성인 채로 남게 됐습니다.
+
+**반성:** 처음 데이터 구조와 렌더링 단위를 어떻게 잡느냐가 이후 기능 확장의 범위를 결정합니다. 캘린더처럼 복잡한 UI는 구현에 바로 뛰어들기 전에, **어떤 단위로 데이터를 묶어 렌더링할지를 먼저 설계**했어야 했습니다.
+
+---
+
+### 5️⃣ Zustand로 상태 관리 — 처음 써봤지만 가장 잘한 선택 중 하나
+
+백엔드와 연동하면서 여러 화면에서 공유해야 하는 데이터가 급격히 늘었습니다.  
+로그인한 사용자 정보, 선택된 그룹의 `teamId`, 인증 토큰이 대표적이었습니다.
+
+`useState`만으로 관리하면 props drilling이 깊어지고, 어느 화면에서 상태가 바뀌었는지 추적하기 어려워집니다.
+
+Zustand는 Redux처럼 action·reducer를 따로 작성하지 않아도 됐고, `create()` 안에 상태와 변경 함수를 함께 정의하는 구조가 `useState`와 감각이 비슷해 처음 쓰는 입장에서 진입 장벽이 낮았습니다.
+```js
+const useGroupStore = create((set) => ({
+  teamId: null,
+  setTeamId: (id) => set({ teamId: id }),
+}));
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+**배운 점:** 전역 상태 관리 도구가 필요한 시점은 생각보다 빨리 찾아옵니다. 화면이 세 개만 넘어가도 공유 데이터가 생기기 시작합니다. Zustand는 작은 프로젝트에서 "가장 작은 복잡도로 전역 상태를 다루는 방법"으로 좋은 선택이었습니다.
 
-```sh
-# Using npm
-npm run ios
+---
 
-# OR using Yarn
-yarn ios
-```
+### 6️⃣ React Query — 설치했지만 제대로 쓰지 못한 이유
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+`package.json`에 `@tanstack/react-query`가 포함되어 있습니다.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+도입을 시도했지만 실제로는 Axios 직접 호출 방식으로 구현했습니다.  
+`useQuery`의 데이터 흐름과 Zustand의 전역 상태를 어떻게 함께 설계할지, 당시 이해 수준에서는 명확하게 그려지지 않았습니다.  
+프로젝트 일정을 고려해 익숙한 방식으로 우선 구현을 완료하는 쪽을 택했습니다.
 
-## Step 3: Modify your app
+게시글 등록 후 목록에 즉시 반영되지 않는 문제도, React Query의 `invalidateQueries`를 활용했다면 훨씬 깔끔하게 해결할 수 있었을 것입니다. 이 부분이 특히 아쉬웠습니다.
 
-Now that you have successfully run the app, let's make changes!
+**반성:** 라이브러리는 "설치"가 아니라 "이해"에서 시작해야 합니다. React Query가 해결하는 문제(서버 상태 캐싱, 로딩/에러 핸들링 자동화, 무효화 전략)를 먼저 이해한 뒤 설계 단계부터 반영했어야 했습니다. 다음 프로젝트에서는 React Query를 처음부터 설계에 포함해 제대로 활용할 계획입니다.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+<br>
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## 🔧 아쉬움과 다음 스텝
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+이 프로젝트는 전공 수업 중간·기말 프로젝트이자 교내 경진대회 출품작이었습니다.  
+두 가지 목적이 겹쳐 있다 보니 시간 제약이 컸고, 그 영향이 코드 곳곳에 남아 있습니다.
 
-## Congratulations! :tada:
+**미완성으로 남긴 것들:**
+- 영수증 서버 업로드 (`multipart/form-data` 연동)
+- 일정 수정·삭제 API 연동
+- 게시글 수정·삭제 API 연동
+- 게시글 등록 후 리스트 즉시 반영 (낙관적 업데이트)
+- 캘린더 기간 일정의 연속 bar 시각화
 
-You've successfully run and modified your React Native App. :partying_face:
+**코드 품질 측면에서의 아쉬움:**
+- 공통 컴포넌트 추상화 부족 (공지·커뮤니티 게시판 등)
+- 유지보수성과 확장성을 고려하지 못한 컴포넌트 구조
+- TypeScript 미적용으로 인한 타입 안전성 부재
 
-### Now what?
+**앞으로 개선하고 싶은 것들:**
+- TypeScript로 전면 마이그레이션해 타입 안전성 확보
+- React Query 도입으로 서버 상태 관리 구조화
+- 공통 컴포넌트 리팩토링으로 유지보수성 향상
+- 미완성 API 연동 완료
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+<br>
 
-# Troubleshooting
+## ✨ 주요 기능 (연동 완성 버전)
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+- 🔐 카카오 OAuth 로그인 + AsyncStorage 기반 자동 로그인
+- 📅 주간 / 월간 캘린더 (그룹 일정 등록, 실서버 연동)
+- 🧾 영수증 촬영·업로드 UI + 승인 워크플로우 (대기/승인/거절)
+- 💰 회비 사이클 생성 + 납부 현황 실시간 조회
+- 📊 잔액·지출 현황 대시보드 (기간별·카테고리별 필터)
+- 📣 공지사항 (이미지·투표 첨부, 댓글/답글 API 연동)
+- 💬 자유 게시판 (익명/기명, 대댓글 API 연동)
+- 🛡 관리자 페이지 (팀원 권한 관리, 가입 승인)
 
-# Learn More
+<br>
 
-To learn more about React Native, take a look at the following resources:
+## 🏆 수상
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+**2025 백석대학교 SmaIt 경진대회 동상**
+
+<br>
+
+## 📈 이 프로젝트를 마치며
+
+MOAU를 개발하면서 가장 많이 들었던 생각은 **"처음부터 다시 하면 이렇게 안 했을 텐데"** 였습니다.
+
+API 명세서를 먼저 봤더라면, 공통 컴포넌트로 추상화했더라면, 캘린더를 주 단위로 설계했더라면 — 아쉬움이 많습니다.
+
+그런데 동시에, 그 아쉬움들이 이 프로젝트를 통해서만 배울 수 있었던 것들이기도 합니다.
+
+"돌아가는 코드"와 "잘 설계된 코드"는 다르다는 것, 도구는 이해하고 나서 선택해야 한다는 것, 협업에서 명세는 신뢰가 아니라 확인으로 해야 한다는 것.
+
+이 프로젝트의 아쉬움들이 다음 프로젝트의 출발점이 될 것입니다.
